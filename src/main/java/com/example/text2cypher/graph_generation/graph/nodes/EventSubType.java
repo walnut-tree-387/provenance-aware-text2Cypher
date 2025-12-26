@@ -8,10 +8,9 @@ import java.util.Map;
 public class EventSubType {
     private String name;
     private Long severity;
-    public EventSubType set(String name){
+    public void set(String name){
         this.name = name;
         this.severity = SEVERITY_MAP.getOrDefault(this.name, 0L);
-        return this;
     }
 
     private static final Map<String, Long> SEVERITY_MAP = Map.ofEntries(
