@@ -1,8 +1,11 @@
 package com.example.text2cypher.neo4j;
+import com.example.text2cypher.data.cqp.entities.AnswerType;
 import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -23,9 +26,9 @@ public class Neo4jService implements AutoCloseable {
             });
         }
     }
-    public Record fetch(String query) {
-        try (Session session = driver.session(SessionConfig.forDatabase(db))) {
-            return session.run(query).single();
+    public List<Record> fetch(String query) {
+        try (Session session = driver.session(SessionConfig.forDatabase(db))) {;
+            return session.run(query).list();
         }
     }
 

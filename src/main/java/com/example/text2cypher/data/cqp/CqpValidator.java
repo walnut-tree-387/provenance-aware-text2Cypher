@@ -1,27 +1,21 @@
 package com.example.text2cypher.data.cqp;
 
+import com.example.text2cypher.data.cqp.entities.CanonicalQueryPlan;
+import com.example.text2cypher.data.cqp.entities.ConstraintLabel;
 import org.springframework.stereotype.Component;
 
 @Component
 public class CqpValidator {
     public void validate(CanonicalQueryPlan cqp) {
         validateStructure(cqp);
-        validateAggregation(cqp);
         validateConstraints(cqp);
     }
 
     private void validateStructure(CanonicalQueryPlan cqp) {
-        if (cqp.getAggregationType() == null)
-            throw new IllegalArgumentException("Aggregation missing");
         if (cqp.getAnswerType() == null)
-            throw new IllegalArgumentException("Answer type missing");
-    }
-
-    private void validateAggregation(CanonicalQueryPlan cqp) {
-        if (cqp.getAggregationType() == AggregationType.SUM &&
-                cqp.getAnswerType() != AnswerType.SCALAR) {
-            throw new IllegalArgumentException("SUM must return scalar");
-        }
+            throw new IllegalArgumentException("Answer type is missing");
+        if (cqp.getQueryIntent() == null)
+            throw new IllegalArgumentException("Query intent is missing");
     }
 
     private void validateConstraints(CanonicalQueryPlan cqp) {

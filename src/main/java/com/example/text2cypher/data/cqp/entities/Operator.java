@@ -1,4 +1,4 @@
-package com.example.text2cypher.data.cqp;
+package com.example.text2cypher.data.cqp.entities;
 
 import lombok.Getter;
 

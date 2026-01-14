@@ -1,7 +1,5 @@
 package com.example.text2cypher.data.proto_nl;
-import com.example.text2cypher.data.cqp.CanonicalQueryPlan;
-import com.example.text2cypher.data.cqp.Constraint;
-import com.example.text2cypher.data.cqp.ConstraintLabel;
+import com.example.text2cypher.data.cqp.entities.*;
 import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
@@ -11,7 +9,7 @@ import java.util.List;
 public class ProtoNLGenerator {
     public String generate(CanonicalQueryPlan cqp) {
         boolean monthConstraintFlag = false;
-        StringBuilder protNl = new StringBuilder("Return " + cqp.getAggregationType().toString().toLowerCase() + " of");
+        StringBuilder protNl = new StringBuilder("Return " + getProtoKeyword(cqp)+ " of ");
         sortConstraints(cqp);
         for(Constraint constraint : cqp.getConstraints()) {
             if(constraint.getLabel().equals(ConstraintLabel.EventType))  {
@@ -19,7 +17,7 @@ public class ProtoNLGenerator {
                         .append(constraint.getValue());
             }
             if(constraint.getLabel().equals(ConstraintLabel.EventSubType))  {
-                protNl.append(" which is of ").append(constraint.getLabel()).append(" ")
+                protNl.append(" of ").append(constraint.getLabel()).append(" ")
                         .append(constraint.getValue());
             }
             if(constraint.getLabel().equals(ConstraintLabel.Month))  {
@@ -36,7 +34,7 @@ public class ProtoNLGenerator {
                         .append(constraint.getValue());
             }
         }
-        return protNl.append(" based on recorded observations").toString();
+        return protNl.toString();
     }
     private void sortConstraints(CanonicalQueryPlan cqp) {
         List<Constraint> constraints = cqp.getConstraints();
@@ -72,5 +70,43 @@ public class ProtoNLGenerator {
         }
         return null;
     }
-
+    private String getProtoKeyword(CanonicalQueryPlan cqp) {
+        return switch (cqp.getQueryIntent()) {
+            case Temporal_Count -> "count";
+            case Temporal_Aggregation -> "sum of count";
+            case Temporal_Comparison -> "comparison";
+            case Dominant_Attribution -> getDominantAttributionPhrase(cqp.getWithClause().getGroupByItems());
+            case Ranking -> getRankingPhrase(cqp.getWithClause().getGroupByItems(), cqp.getLimit());
+            case Ratio ->  "ratio";
+            default -> throw new IllegalArgumentException("Unknown intent: " + cqp.getQueryIntent());
+        };
+    }
+    private String getDominantAttributionPhrase(List<ClauseItem> groupByItems) {
+        StringBuilder sb = new StringBuilder();
+        groupByItems.forEach(item -> {
+            String attribute = switch (item.getExpression()) {
+                case "z.name" -> "name of the zone";
+                case "est.name" -> "name of the event sub type";
+                case "m.month" -> "name of the month";
+                case "year" -> "the year";
+                default -> throw new IllegalStateException("Unexpected value: " + item.getExpression());
+            };
+            sb.append(attribute).append(" which observed the highest number");
+        });
+        return sb.toString();
+    }
+    private String getRankingPhrase(List<ClauseItem> groupByItems, Long limit) {
+        StringBuilder sb = new StringBuilder();
+        groupByItems.forEach(item -> {
+            String attribute = switch (item.getExpression()) {
+                case "z.name" -> "top " + limit + " zones";
+                case "est.name" -> "top " + limit + "event sub type";
+                case "m.month" -> "top " + limit + "months";
+                case "year" -> "top " + limit +" years";
+                default -> throw new IllegalStateException("Unexpected value: " + item.getExpression());
+            };
+            sb.append(attribute).append(" which observed the highest number");
+        });
+        return sb.toString();
+    }
 }
