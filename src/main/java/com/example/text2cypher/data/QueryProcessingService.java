@@ -35,6 +35,6 @@ public class QueryProcessingService {
         List<Record> records = neo4jService.fetch(cypher);
         String protoNL = protoNLGenerator.generate(cqp);
         List<String> Nl = protoNLParaphraser.paraphrase(protoNL);
-        return CypherResponseMapper.map(records, protoNLGenerator.generate(cqp), Nl);
+        return CypherResponseMapper.map(records, protoNL, Nl, cypher);
     }
 }

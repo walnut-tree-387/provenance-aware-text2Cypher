@@ -24,7 +24,7 @@ public class TemporalCountCqpFactory implements CqpFactory<TemporalCountDto> {
                 ), null, null,
                 new ReturnClause(
                         List.of(
-                                new ClauseItem("count", "value"),
+                                new ClauseItem("count", "answer"),
                                 new ClauseItem("provenance", "provenance")
                         )
                 )

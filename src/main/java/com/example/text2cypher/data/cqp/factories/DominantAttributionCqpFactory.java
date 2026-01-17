@@ -29,14 +29,14 @@ public class DominantAttributionCqpFactory implements CqpFactory<DominantAttribu
                         List.of(new AggregationExpression(
                                 AggregationType.SUM,
                                 "o.count",
-                                "total"
+                                "total", null
                         )),
                         true
                 ),
                 new OrderByClause("total", "DESC"), 1L,
                 new ReturnClause(
                         List.of(
-                                new ClauseItem("key", "value"),
+                                new ClauseItem("key", "answer"),
                                 new ClauseItem("provenance", "provenance")
                         )
                 )

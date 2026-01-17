@@ -32,7 +32,7 @@ public class ProtoNLParaphraser {
                     .getFirst()
                     .getMessage()
                     .getContent();
-            paraphrases.add(ParaphraseNormalizer.normalize(rawText, model));
+            paraphrases.add(LLMAnswerNormalizer.paraphraseNormalize(rawText, model));
         }
         return paraphrases;
     }

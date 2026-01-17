@@ -22,7 +22,7 @@ public class TemporalAggregationCqpFactory implements CqpFactory<TemporalAggrega
                                 new AggregationExpression(
                                         AggregationType.SUM,
                                         "o.count",
-                                        "total"
+                                        "total", null
                                 )
                         ),
                         true
@@ -30,7 +30,7 @@ public class TemporalAggregationCqpFactory implements CqpFactory<TemporalAggrega
                 null, null,
                 new ReturnClause(
                         List.of(
-                                new ClauseItem("total", "value"),
+                                new ClauseItem("total", "answer"),
                                 new ClauseItem("provenance", "provenance")
                         )
                 )

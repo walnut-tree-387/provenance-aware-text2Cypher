@@ -43,7 +43,7 @@ public class QueryPlannerImpl implements QueryPlanner {
     );
 
     private static final Map<Long, String> subTypeList = Map.ofEntries(
-            Map.entry(1L, "dakoity"),
+            Map.entry(1L, "dacoity"),
             Map.entry(2L, "robbery"),
             Map.entry(3L, "murder"),
             Map.entry(4L, "speedy_trial"),
@@ -107,7 +107,8 @@ public class QueryPlannerImpl implements QueryPlanner {
 
     private Map<String, Object> getParams(Zone zone, Month month, EventType type, EventSubType subType, Observation observation) {
         System.out.println(zone.toString() +   month.toString() +  type.toString() + subType.toString() + observation.toString());
-        observation.setId(zone.getName() + month.getMonth().toString() + subType.getName());
+        observation.setId(zone.getName() + '-' + subType.getName() + '-'
+                + month.getMonth().toString() + '-' + month.getYear().toString());
         return Map.ofEntries(
                 Map.entry("zoneName", zone.getName()),
                 Map.entry("zoneDivision", zone.getDivision()),

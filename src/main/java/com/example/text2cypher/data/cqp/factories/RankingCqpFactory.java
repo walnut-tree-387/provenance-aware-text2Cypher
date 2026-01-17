@@ -12,7 +12,8 @@ public class RankingCqpFactory implements CqpFactory<RankingQueryDto>{
     public CanonicalQueryPlan fromDto(RankingQueryDto dto) {
         ClauseItem groupingKey = switch (dto.getRankDimension()) {
             case "zone" -> new ClauseItem("z.name", "key");
-            case "month" -> new ClauseItem("m.code", "key");
+            case "year" -> new ClauseItem("m.year", "key");
+            case "month" -> new ClauseItem("m.month", "key");
             case "event_sub_type" -> new ClauseItem("est.name", "key");
             case "event_type" -> new ClauseItem("et.name", "key");
             default -> throw new IllegalStateException("Unexpected value: " + dto.getRankDimension());
@@ -24,15 +25,15 @@ public class RankingCqpFactory implements CqpFactory<RankingQueryDto>{
                         new AggregationExpression(
                                 AggregationType.SUM,
                                 "o.count",
-                                "total"
+                                "total", null
                         )
                 ),
                 true
         );
         ReturnClause returnClause = new ReturnClause(
                 List.of(
-                        new ClauseItem("key", "value"),
-                        new ClauseItem("total", "total"),
+                        new ClauseItem("key", "answer"),
+                        new ClauseItem("total", "value"),
                         new ClauseItem("provenance", "provenance")
                 )
         );

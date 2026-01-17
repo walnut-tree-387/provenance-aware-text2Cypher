@@ -21,11 +21,10 @@ public class BaseConstraintExtractor {
             constraints.add(new Constraint(ConstraintLabel.Month, "code", Operator.EQ, dto.getMonthCode()));
         }if(dto.getMonthYear() != null) {
             constraints.add(new Constraint(ConstraintLabel.Month, "year", Operator.EQ, dto.getMonthYear()));
-            if(dto.getMonthQuarter() != null)
-                constraints.add(new Constraint(ConstraintLabel.Month, "quarter", Operator.EQ, dto.getMonthQuarter()));
-            if(dto.getMonthValue() != null)
-                constraints.add(new Constraint(ConstraintLabel.Month, "month", Operator.EQ, dto.getMonthValue()));
-        }
+        }if(dto.getMonthQuarter() != null)
+            constraints.add(new Constraint(ConstraintLabel.Month, "quarter", Operator.EQ, dto.getMonthQuarter()));
+        if(dto.getMonthValue() != null)
+            constraints.add(new Constraint(ConstraintLabel.Month, "month", Operator.EQ, dto.getMonthValue()));
         return constraints;
     }
 }

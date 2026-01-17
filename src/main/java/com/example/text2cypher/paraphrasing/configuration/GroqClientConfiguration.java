@@ -12,7 +12,7 @@ import reactor.netty.http.client.HttpClient;
 import java.time.Duration;
 
 @Configuration
-public class GrokClientConfiguration {
+public class GroqClientConfiguration {
     @Value("${groq.api.url}")
     private String baseUrl;
 

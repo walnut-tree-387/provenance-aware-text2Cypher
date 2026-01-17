@@ -1,5 +1,15 @@
 package com.example.text2cypher.data.dto;
 
+import com.example.text2cypher.data.cqp.entities.Constraint;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+@EqualsAndHashCode(callSuper = true)
+@Data
 public class RatioQueryDto extends BaseQueryDto{
-    // apply two case and calculate ratio ? how many parcentage of crime was dakoity in dmp 2024?
+    private Constraint constraint; // numerator constraint
 }

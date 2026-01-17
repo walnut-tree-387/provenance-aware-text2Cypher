@@ -12,16 +12,16 @@ public class CqpValidator {
     }
 
     private void validateStructure(CanonicalQueryPlan cqp) {
-        if (cqp.getAnswerType() == null)
-            throw new IllegalArgumentException("Answer type is missing");
-        if (cqp.getQueryIntent() == null)
-            throw new IllegalArgumentException("Query intent is missing");
+//        if (cqp.getAnswerType() == null)
+//            throw new IllegalArgumentException("Answer type is missing");
+//        if (cqp.getQueryIntent() == null)
+//            throw new IllegalArgumentException("Query intent is missing");
     }
 
     private void validateConstraints(CanonicalQueryPlan cqp) {
-        boolean hasMonth = cqp.getConstraints().stream()
-                .anyMatch(c -> c.getLabel() == ConstraintLabel.Month);
-        if (!hasMonth)
-            throw new IllegalArgumentException("Temporal aggregation requires Month constraint");
+//        boolean hasMonth = cqp.getConstraints().stream()
+//                .anyMatch(c -> c.getLabel() == ConstraintLabel.Month);
+//        if (!hasMonth)
+//            throw new IllegalArgumentException("Temporal aggregation requires Month constraint");
     }
 }

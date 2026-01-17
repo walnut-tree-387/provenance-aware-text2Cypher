@@ -3,13 +3,9 @@ package com.example.text2cypher.data.cqp.entities;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-import java.util.List;
-
 @Data
 @AllArgsConstructor
-public class AggregationExpression implements WithExpression {
-    private AggregationType aggregationType;
+public class DerivedExpression implements WithExpression {
     private String expression;
     private String alias;
-    private Constraint constraint;
 }

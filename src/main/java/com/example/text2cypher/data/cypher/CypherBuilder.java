@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 public class CypherBuilder {
@@ -56,11 +57,6 @@ public class CypherBuilder {
         var = (c.getValue() instanceof String) ? var + '"' +  c.getValue() + '"' : var + c.getValue();
         return var;
     }
-
-    private boolean hasZoneConstraint(CanonicalQueryPlan cqp) {
-        return cqp.getConstraints().stream()
-                .anyMatch(c -> c.getLabel() == ConstraintLabel.Zone);
-    }
     private void appendReturn(StringBuilder sb, CanonicalQueryPlan cqp) {
         sb.append("RETURN ");
 
@@ -73,29 +69,77 @@ public class CypherBuilder {
 
     private void appendWith(StringBuilder sb, CanonicalQueryPlan cqp) {
         WithClause wc = cqp.getWithClause();
-        if (wc == null) return;
-
+        List<AggregationExpression> aggregates = new ArrayList<>();
+        List<DerivedExpression> derived = new ArrayList<>();
+        wc.getExpressions().forEach(expr -> {
+            if (expr instanceof AggregationExpression a) {
+                aggregates.add(a);
+            } else if (expr instanceof DerivedExpression d) {
+                derived.add(d);
+            } else {
+                throw new IllegalStateException(
+                        "Unsupported WithExpression: " + expr.getClass()
+                );
+            }
+        });
         sb.append("WITH ");
 
-        List<String> parts = new ArrayList<>();
+        List<String> firstParts = new ArrayList<>();
 
+        // group by items
         wc.getGroupByItems().forEach(i ->
-                parts.add(i.getExpression() + " AS " + i.getAlias())
+                firstParts.add(i.getExpression() + " AS " + i.getAlias())
         );
 
-        if(!wc.getAggregates().isEmpty())
-        {
-            wc.getAggregates().forEach(a ->
-                    parts.add(a.getAggregationType() +
-                            "(" + a.getExpression() + ") AS " + a.getAlias())
-            );
-        }
+        // aggregation expressions
+        aggregates.forEach(a -> {
+            if (a.getConstraint() != null) {
+                String condition = constraintToCypher(a.getConstraint());
+                firstParts.add(
+                        a.getAggregationType() +
+                                "(CASE WHEN " + condition +
+                                " THEN " + a.getExpression() +
+                                " ELSE 0 END) AS " + a.getAlias()
+                );
 
+            } else {
+                firstParts.add(
+                        a.getAggregationType() +
+                                "(" + a.getExpression() +
+                                ") AS " + a.getAlias()
+                );
+            }
+        });
+        // provenance ONLY in first WITH
         if (wc.isCollectProvenance()) {
-            parts.add("collect(o) AS provenance");
+            firstParts.add("collect(o) AS provenance");
+        }
+        sb.append(String.join(", ", firstParts)).append("\n");
+
+        if (!derived.isEmpty()) {
+
+            sb.append("WITH ");
+
+            List<String> secondParts = new ArrayList<>();
+
+            // carry forward all aggregate aliases
+            aggregates.forEach(a ->
+                    secondParts.add(a.getAlias())
+            );
+
+            // carry provenance
+            if (wc.isCollectProvenance()) {
+                secondParts.add("provenance");
+            }
+
+            // derived expressions
+            derived.forEach(d ->
+                    secondParts.add(d.getExpression() + " AS " + d.getAlias())
+            );
+
+            sb.append(String.join(", ", secondParts)).append("\n");
         }
 
-        sb.append(String.join(", ", parts)).append("\n");
     }
     private void appendOrderBy(StringBuilder sb, CanonicalQueryPlan cqp) {
         if (cqp.getOrderByClause() == null) return;
@@ -106,6 +150,18 @@ public class CypherBuilder {
                 .append(cqp.getOrderByClause().getDirection())
                 .append("\n").append("LIMIT ").append(cqp.getLimit().toString()).append(" \n");
     }
-
+    private String constraintToCypher(Constraint c) {
+        Object value = c.getValue();
+        String formattedValue;
+        if(c.getKey().equals("m.code") || c.getKey().equals("z.name") || c.getKey().equals("et.name") || c.getKey().equals("est.name")) {
+            if (value instanceof String) {
+                formattedValue = "'" + value + "'";
+            } else {
+                formattedValue = value.toString();
+            }
+            return c.getKey() + c.getOperator().getValue() + formattedValue;
+        }
+        else return c.getKey() + c.getOperator().getValue() + c.getValue();
+    }
 
 }

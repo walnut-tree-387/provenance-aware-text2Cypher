@@ -8,7 +8,7 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 public class WithClause {
-    private List<ClauseItem> groupByItems;       // e.g. z.name AS key
-    private List<AggregationExpression> aggregates; // sum(o.count) AS total
+    private List<ClauseItem> groupByItems;
+    private List<WithExpression> expressions;
     private boolean collectProvenance;
 }
