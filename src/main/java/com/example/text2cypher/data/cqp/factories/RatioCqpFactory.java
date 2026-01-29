@@ -20,7 +20,7 @@ public class RatioCqpFactory implements CqpFactory<RatioQueryDto>{
         );
         return new CanonicalQueryPlan(
                 QueryIntent.Ratio,
-                AnswerType.SCALAR,
+                AnswerType.PERCENTAGE,
                 BaseConstraintExtractor.extract(dto),
                 withClause,
                 null, null, new ReturnClause(

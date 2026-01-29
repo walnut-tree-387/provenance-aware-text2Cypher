@@ -17,4 +17,8 @@ public class ZeroShotController {
     public ResponseEntity<?> checkZeroShot(@RequestParam String question){
         return new ResponseEntity<>(nlToCypherGenerator.generateCypher(question), HttpStatus.OK);
     }
+    @GetMapping("/ais")
+    public ResponseEntity<?> generateAIS(@RequestParam String question){
+        return new ResponseEntity<>(nlToCypherGenerator.generateAIS(question), HttpStatus.OK);
+    }
 }

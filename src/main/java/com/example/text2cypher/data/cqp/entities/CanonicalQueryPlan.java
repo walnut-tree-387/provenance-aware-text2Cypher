@@ -12,7 +12,6 @@ public class CanonicalQueryPlan {
     private QueryIntent queryIntent;
     private AnswerType answerType;
     private List<Constraint> constraints;
-
     private WithClause withClause;
     private OrderByClause orderByClause;
     private Long limit;

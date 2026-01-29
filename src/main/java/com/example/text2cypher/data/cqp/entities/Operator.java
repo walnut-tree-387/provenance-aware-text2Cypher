@@ -4,15 +4,11 @@ import lombok.Getter;
 
 @Getter
 public enum Operator {
-    EQ("="), GT(">"), LT("<"), BETWEEN("BETWEEN");
+    EQ("="), GT(">"), LT("<"), BETWEEN("BETWEEN"), IN("IN"), NOT_IN("NOT IN");
     private final String value;
 
     Operator(String value) {
         this.value = value;
-    }
-
-    Operator() {
-        this.value = null;
     }
 
 }
