@@ -8,18 +8,15 @@ import java.util.List;
 
 @Data
 @AllArgsConstructor
-public final class Difference implements PostAggregation {
+public final class Comparison implements PostAggregation {
+    private String name;
+    private PostAggregationType type;
     private String left;
     private String right;
-    private String name;
+
     @Override
     public String name() {
         return name;
-    }
-
-    @Override
-    public PostAggregationType getType() {
-        return PostAggregationType.DIFFERENCE;
     }
 
     @Override
@@ -27,4 +24,3 @@ public final class Difference implements PostAggregation {
         return List.of(left, right);
     }
 }
-

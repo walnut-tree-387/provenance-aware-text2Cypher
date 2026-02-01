@@ -5,5 +5,7 @@ public enum AISDerivedType {
     DIFFERENCE,
     GT,
     LT,
+    GTE,
+    LTE,
     EQ;
 }

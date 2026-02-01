@@ -6,7 +6,6 @@ import com.example.text2cypher.data.cqp.entities.AIS.derived_intent.AISDerivedIn
 import com.example.text2cypher.data.cqp.entities.AIS.fact.AISFact;
 import com.example.text2cypher.data.cqp.entities.AIS.intent.AISIntent;
 import com.example.text2cypher.data.cqp.entities.AIS.order.AISOrderIntent;
-import com.example.text2cypher.data.cqp.entities.AIS.projection.AISProjection;
 import lombok.Data;
 
 import java.util.List;
@@ -20,5 +19,5 @@ public class AIS {
     List<AISOrderIntent> orderIntents;
     Integer limit;
     Integer offset;
-    List<AISProjection> projection;
+    List<String> projection;
 }

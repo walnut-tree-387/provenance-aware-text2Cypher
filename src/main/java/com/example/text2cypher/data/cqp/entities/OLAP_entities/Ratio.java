@@ -1,27 +1,31 @@
 package com.example.text2cypher.data.cqp.entities.OLAP_entities;
 
+import com.example.text2cypher.data.dto.PostAggregationType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.util.List;
 
+
 @Data
 @AllArgsConstructor
 public final class Ratio implements PostAggregation{
-    private String numeratorMeasure;
-    private String denominatorMeasure;
-    private String alias;
+    private String numerator;
+    private String denominator;
+    private String name;
 
     @Override
-    public String toCypherExpression() {
-        return String.format(
-                "CASE WHEN %s = 0 THEN 0.0 ELSE 100.0 * %s / %s END",
-                denominatorMeasure, numeratorMeasure, denominatorMeasure
-        );
+    public String name() {
+        return name;
     }
 
     @Override
-    public String alias() {
-        return alias;
+    public PostAggregationType getType() {
+        return PostAggregationType.RATIO;
+    }
+
+    @Override
+    public List<String> getOperands() {
+        return List.of("toFloat(" + numerator + ")", denominator);
     }
 }

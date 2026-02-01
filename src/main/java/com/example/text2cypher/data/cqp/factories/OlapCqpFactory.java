@@ -5,6 +5,7 @@ import com.example.text2cypher.data.dto.OlapQueryDto;
 import com.example.text2cypher.data.dto.PostAggregationDto;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.example.text2cypher.data.dto.PostAggregationType.*;
@@ -19,15 +20,21 @@ public class OlapCqpFactory {
                 compileFilters(dto),
                 compileGroupBy(dto),
                 compileMeasures(dto),
+                compileProvenanceFilters(),
                 compilePostAggregations(dto),
                 compileOrder(dto),
+                dto.getLimit(),
+                dto.getOffset(),
                 compileProjection(dto)
         );
+    }
+    private List<Filter> compileProvenanceFilters(){
+        return new ArrayList<>();
     }
     private List<Filter> compileFilters(OlapQueryDto dto) {
         return (dto.getFilters() == null) ? List.of() : dto.getFilters();
     }
-    private List<Dimension> compileGroupBy(OlapQueryDto dto) {
+    private List<GroupKey> compileGroupBy(OlapQueryDto dto) {
         return dto.getGroupBy() == null ? List.of() : dto.getGroupBy();
     }
     private List<Measure> compileMeasures(OlapQueryDto dto) {
@@ -35,25 +42,21 @@ public class OlapCqpFactory {
                 .map(m ->
                         new Measure(
                                 m.getAggregationType(),
-                                m.getAggregationSemantic(),
-                                Fact.OBSERVATION_COUNT,
                                 m.getAlias(),
                                 m.getFilters()
                         )
                 )
                 .toList();
     }
-    private OrderSpec compileOrder(OlapQueryDto dto) {
-        if (dto.getOrder() == null) return null;
-        return new OrderSpec(
-                dto.getOrder().getField(),
-                dto.getOrder().getDirection(),
-                dto.getOrder().getLimit()
-        );
+    private List<OrderSpec> compileOrder(OlapQueryDto dto) {
+        return dto.getOrders().stream()
+                .map(o -> new OrderSpec(o.getField(), o.getDirection(), o.getOrderType()))
+                .toList();
     }
 
-    private Projection compileProjection(OlapQueryDto dto) {
-        return new Projection(dto.getProjection());
+
+    private List<String> compileProjection(OlapQueryDto dto) {
+        return dto.getProjection();
     }
 
     private List<PostAggregation> compilePostAggregations(OlapQueryDto dto) {
@@ -76,10 +79,11 @@ public class OlapCqpFactory {
                     spec.getArgs().get("right"),
                     spec.getAlias()
             );
-            case SHARE -> new Share(
+            default -> new Comparison(
+                    spec.getAlias(),
+                    spec.getType(),
                     spec.getArgs().get("part"),
-                    spec.getArgs().get("total"),
-                    spec.getAlias()
+                    spec.getArgs().get("total")
             );
         };
     }

@@ -9,10 +9,11 @@ public enum Dimension {
     MONTH_CODE("m.code"),
     MONTH_QUARTER("m.quarter"),
     MONTH_YEAR("m.year"),
-    MONTH_MONTH("m.month"),
-    EVENT_TYPE_NAME("et.name"),
-    EVENT_SUBTYPE_NAME("est.name"),
-    EVENT_SUBTYPE_SEVERITY("est.severity");
+    MONTH("m.month"),
+    EVENT_TYPE("et.name"),
+    EVENT_SUBTYPE("est.name"),
+    EVENT_SUBTYPE_SEVERITY("est.severity"),
+    OBSERVATION_COUNT("o.count");
     private final String value;
 
     Dimension(String value) {

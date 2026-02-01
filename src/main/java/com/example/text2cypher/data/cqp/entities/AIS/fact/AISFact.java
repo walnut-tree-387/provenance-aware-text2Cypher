@@ -6,6 +6,6 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class AISFact {
-    private AISFactNode node;
+    private String node;
     private String field;
 }

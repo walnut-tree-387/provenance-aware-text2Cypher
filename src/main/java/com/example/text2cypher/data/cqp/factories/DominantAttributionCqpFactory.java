@@ -27,7 +27,7 @@ public class DominantAttributionCqpFactory implements CqpFactory<DominantAttribu
                 new WithClause(
                         List.of(groupKey),
                         List.of(new AggregationExpression(
-                                AggregationType.SUM,
+                                AggregationType.COUNT_SUM,
                                 "o.count",
                                 "total", null
                         )),

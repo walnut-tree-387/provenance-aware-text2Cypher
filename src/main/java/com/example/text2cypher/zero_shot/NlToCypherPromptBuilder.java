@@ -208,7 +208,7 @@ public class NlToCypherPromptBuilder {
         2. CONTEXT
         Each AISContext must have the following properties:
         - dimension: Possible values - MONTH, MONTH_YEAR, MONTH_QUARTER, MONTH_CODE, ZONE_NAME, ZONE_DIVISION, EVENT_TYPE, EVENT_SUBTYPE, EVENT_SUBTYPE_SEVERITY
-        - operator: Possible values - EQ, IN, BETWEEN, GT, LT, GTE, LTE, NOT_IN
+        - operator: Possible values - EQ, IN, GT, LT, GTE, LTE, NOT_IN
         - value: you MUST extract from the question. Possible data types - integer, string, or list depending on operator
         
         CONTEXT TYPES : There are 2 types of Context.
@@ -221,7 +221,7 @@ public class NlToCypherPromptBuilder {
         - LocalContext MUST ONLY be used to express INTENT-SPECIFIC DEVIATIONS from the global context and MUST be listed in INTENT Section.
         - Same local context MUST NOT be applied to different Intent. It MUST be a Global Context.
         - If a question explicitly constrains any DIMENSION to a finite or bounded domain (explicit values, comparisons, ranges, thresholds),
-          the planner MUST apply that constraint in Global Context first using the appropriate operator(IN, =, BETWEEN, >, >=, <, <=).
+          the planner MUST apply that constraint in Global Context first using the appropriate operator(IN, =, >, >=, <, <=).
         - Example :
             1. Ratio/Difference of narcotics to arms act recoveries / Q1 VS Q2 / January vs December / Crime Vs Recovery / Dhaka Vs Chittagong
                → GlobalContext: { dimension: 'EVENT_SUBTYPE', operator: 'IN' , value : ['narcotics', 'arms_act'] }
@@ -249,7 +249,7 @@ public class NlToCypherPromptBuilder {
         9. Map EventSubType values exactly as spelled in the schema (e.g., dacoity, arms_act, smuggling, women_and_child_repression). DO NOT Incorrectly spell EventSubType  values.
         10. EVENT_SUBTYPE_SEVERITY is for estimating severity for a crime OR recovery incident.  Map severity to DIMENSION EVENT_SUBTYPE_SEVERITY and It’s value MUST be from 1 (lowest) to 5 (highest).
         11. For multiple values (e.g., "dacoity or robbery"), use operator IN with a list of values.
-        12. For ranges of months, quarters, or other numeric values, use operator BETWEEN with [start, end].
+        12. For ranges of months, quarters, or other numeric values, use operator IN with [all possible values].
         13. Do NOT invent or add extra CONTEXT not present in the question.
         13. Output must be a **JSON array** of objects, where each object represents one AISContext with dimension, operator, and value.
         Examples:

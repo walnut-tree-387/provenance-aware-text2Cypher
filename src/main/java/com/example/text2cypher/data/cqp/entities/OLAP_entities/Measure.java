@@ -9,9 +9,7 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 public class Measure {
-    private AggregationType aggregationType;   // SUM, COUNT
-    private AggregationSemantic aggregationSemantic;
-    private Fact fact;
+    private AggregationType aggregationType;
     private String alias;
     private List<Filter> filters;
 }

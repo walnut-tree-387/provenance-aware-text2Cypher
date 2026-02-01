@@ -8,5 +8,5 @@ import lombok.Data;
 public class OrderSpec {
     private String field;
     private OrderDirection direction;
-    private Long limit;
+    private OrderType orderType;
 }

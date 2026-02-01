@@ -7,9 +7,11 @@ import java.util.List;
 @Data
 public class OlapQueryDto {
     private List<Filter> filters;
-    private List<Dimension> groupBy;
+    private List<GroupKey> groupBy;
     private List<Measure> measures;
     private List<PostAggregationDto> postAggregations;
-    private OrderSpec order;
+    private List<OrderSpec> orders;
     private List<String> projection;
+    private Integer limit;
+    private Integer offset;
 }

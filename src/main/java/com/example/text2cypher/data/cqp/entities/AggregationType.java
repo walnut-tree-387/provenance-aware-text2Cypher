@@ -1,5 +1,5 @@
 package com.example.text2cypher.data.cqp.entities;
 
 public enum AggregationType {
-    COLLECT, SUM
+    COLLECT, COUNT_SUM, WEIGHTED_SUM
 }

@@ -12,8 +12,8 @@ import java.util.Map;
 public class RatioCqpFactory implements CqpFactory<RatioQueryDto>{
     @Override
     public CanonicalQueryPlan fromDto(RatioQueryDto dto) {
-        AggregationExpression denominator =  new AggregationExpression(AggregationType.SUM, "o.count", "denominator", null);
-        AggregationExpression numerator = new AggregationExpression(AggregationType.SUM, "o.count", "numerator", dto.getConstraint());
+        AggregationExpression denominator =  new AggregationExpression(AggregationType.COUNT_SUM, "o.count", "denominator", null);
+        AggregationExpression numerator = new AggregationExpression(AggregationType.COUNT_SUM, "o.count", "numerator", dto.getConstraint());
         DerivedExpression ratioExpr = new DerivedExpression("(numerator * 1.0 / denominator) * 100", "percentage");
         WithClause withClause = new WithClause(
                 List.of(), List.of(numerator, denominator, ratioExpr),true

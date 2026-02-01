@@ -4,7 +4,7 @@ import lombok.Getter;
 
 @Getter
 public enum Operator {
-    EQ("="), GT(">"), LT("<"), BETWEEN("BETWEEN"), IN("IN"), NOT_IN("NOT IN");
+    EQ("="), GT(">"), LT("<"), GTE(">="), LTE("<="), BETWEEN("IN"), IN("IN"), NOT_IN("NOT IN");
     private final String value;
 
     Operator(String value) {
