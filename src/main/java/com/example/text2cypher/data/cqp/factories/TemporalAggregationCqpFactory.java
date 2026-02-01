@@ -20,7 +20,7 @@ public class TemporalAggregationCqpFactory implements CqpFactory<TemporalAggrega
                         List.of(),
                         List.of(
                                 new AggregationExpression(
-                                        AggregationType.SUM,
+                                        AggregationType.COUNT_SUM,
                                         "o.count",
                                         "total", null
                                 )

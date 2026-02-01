@@ -7,7 +7,7 @@ public class Zone {
     private String name;
     private String division;
 
-    public Zone set(String name){
+    public void set(String name){
         this.name = name;
         switch (name){
             case "dmp" : case "dhaka_range" : case "gmp" : this.division = "Dhaka"; break;
@@ -21,6 +21,5 @@ public class Zone {
             case "ralway_range" : this.division = "Railway"; break;
             default: break;
         }
-        return this;
     }
 }

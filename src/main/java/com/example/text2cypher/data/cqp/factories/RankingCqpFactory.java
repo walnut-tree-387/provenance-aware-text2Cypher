@@ -23,7 +23,7 @@ public class RankingCqpFactory implements CqpFactory<RankingQueryDto>{
                 List.of(groupingKey),
                 List.of(
                         new AggregationExpression(
-                                AggregationType.SUM,
+                                AggregationType.COUNT_SUM,
                                 "o.count",
                                 "total", null
                         )

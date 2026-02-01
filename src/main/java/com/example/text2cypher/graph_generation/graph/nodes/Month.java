@@ -14,6 +14,6 @@ public class Month {
         String month = code.substring(5, 7);
         this.year = Long.parseLong(year);
         this.month = Long.parseLong(month);
-        this.quarter = (this.month % 4 == 0) ? this.month / 4 : (this.month / 4L) + 1L;
+        this.quarter = (this.month % 3 == 0) ? this.month / 3 : (this.month / 3L) + 1L;
     }
 }
