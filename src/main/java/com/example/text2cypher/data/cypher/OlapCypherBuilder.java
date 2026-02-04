@@ -1,6 +1,5 @@
 package com.example.text2cypher.data.cypher;
-import com.example.text2cypher.data.cqp.entities.AggregationType;
-import com.example.text2cypher.data.cqp.entities.OLAP_entities.*;
+import com.example.text2cypher.data.cqp.*;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -48,7 +47,6 @@ public class OlapCypherBuilder {
     }
     private void postAggregationClause(List<PostAggregation> posts, StringBuilder cypher) {
         if (posts.isEmpty()) return;
-
         List<List<PostAggregation>> layers = layerPostAggregations(posts);
 
         for (List<PostAggregation> layer : layers) {
@@ -70,7 +68,7 @@ public class OlapCypherBuilder {
     }
 
     private void aggregationWithClause(List<GroupKey> groupBy,
-                                 List<Measure> measures, List<Filter> provenanceFilters, StringBuilder cypher) {
+                                       List<Measure> measures, List<Filter> provenanceFilters, StringBuilder cypher) {
         List<String> groupExpressionList = groupBy.stream()
                 .map(g -> g.getDimension().getValue() + " AS " + g.getName())
                 .toList();
@@ -106,7 +104,6 @@ public class OlapCypherBuilder {
 
     private List<List<PostAggregation>> layerPostAggregations(List<PostAggregation> posts) {
         List<List<PostAggregation>> layers = new ArrayList<>();
-
         Set<String> resolved = new HashSet<>();
         Set<String> allPostAggNames = posts.stream()
                 .map(PostAggregation::name)

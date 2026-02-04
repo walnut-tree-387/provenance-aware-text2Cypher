@@ -1,6 +1,5 @@
 package com.example.text2cypher.data.cypher;
 
-import com.example.text2cypher.data.cqp.entities.OLAP_entities.CQP;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 

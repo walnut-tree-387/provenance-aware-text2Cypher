@@ -1,11 +1,8 @@
 package com.example.text2cypher.paraphrasing.service;
 
-import com.example.text2cypher.data.cqp.entities.AIS.AIS;
 import org.springframework.stereotype.Component;
-import tools.jackson.databind.ObjectMapper;
 
 import java.util.Arrays;
-import java.util.List;
 
 @Component
 public class LLMAnswerNormalizer {

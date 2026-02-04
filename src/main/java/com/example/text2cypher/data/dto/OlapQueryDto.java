@@ -1,6 +1,6 @@
 package com.example.text2cypher.data.dto;
 
-import com.example.text2cypher.data.cqp.entities.OLAP_entities.*;
+import com.example.text2cypher.data.cqp.*;
 import lombok.Data;
 
 import java.util.List;

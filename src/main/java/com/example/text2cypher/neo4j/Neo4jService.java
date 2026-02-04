@@ -1,5 +1,4 @@
 package com.example.text2cypher.neo4j;
-import com.example.text2cypher.data.cqp.entities.AnswerType;
 import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
 import org.springframework.beans.factory.annotation.Value;

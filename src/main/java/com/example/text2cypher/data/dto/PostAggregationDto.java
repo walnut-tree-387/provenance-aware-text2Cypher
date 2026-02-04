@@ -1,5 +1,6 @@
 package com.example.text2cypher.data.dto;
 
+import com.example.text2cypher.data.cqp.PostAggregationType;
 import lombok.Data;
 
 import java.util.Map;
