@@ -1,5 +1,5 @@
 package com.example.text2cypher.cypher_utils.cypher;
-import com.example.text2cypher.ais_evaluation.cqp.*;
+import com.example.text2cypher.cypher_utils.cqp.*;
 import com.example.text2cypher.cypher_utils.cqp.*;
 import org.springframework.stereotype.Component;
 
