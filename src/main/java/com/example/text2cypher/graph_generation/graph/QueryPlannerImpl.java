@@ -1,16 +1,21 @@
 package com.example.text2cypher.graph_generation.graph;
 
 import com.example.text2cypher.graph_generation.csv_parser.CsvRow;
+import com.example.text2cypher.graph_generation.csv_parser.CsvRowRepository;
 import com.example.text2cypher.graph_generation.dto.MonthObservation;
 import com.example.text2cypher.graph_generation.graph.nodes.*;
 import com.example.text2cypher.neo4j.Neo4jService;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 @Service
 public class QueryPlannerImpl implements QueryPlanner {
     private final Neo4jService neo4jService;
+    private final CsvRowRepository csvRowRepository;
     private static final String queryTemplate = """
             MERGE (z:Zone {name: $zoneName, division: $zoneDivision})
             MERGE (m:Month {code : $monthCode, year: $monthYear, month: $monthMonth, quarter: $monthQuarter})
@@ -62,8 +67,9 @@ public class QueryPlannerImpl implements QueryPlanner {
 
 
 
-    public QueryPlannerImpl(Neo4jService neo4jService) {
+    public QueryPlannerImpl(Neo4jService neo4jService, CsvRowRepository csvRowRepository) {
         this.neo4jService = neo4jService;
+        this.csvRowRepository = csvRowRepository;
     }
 
     @Override
@@ -78,7 +84,12 @@ public class QueryPlannerImpl implements QueryPlanner {
         type.set(csvRow.getType());
         EventSubType subType = new EventSubType();
         subType.set(csvRow.getSubType());
-        return getParams(zone, month, type, subType, observation);
+        Map<String, Object> params = getParams(zone, month, type, subType, observation);
+        csvRow.setObservationId(params.get("obsId").toString());
+        csvRow.setDivision(params.get("zoneDivision").toString());
+        csvRow.setSubTypeSeverity(Long.parseLong(params.get("subTypeSeverity").toString()));
+        csvRowRepository.save(csvRow);
+        return params;
     }
 
     @Override
@@ -88,10 +99,13 @@ public class QueryPlannerImpl implements QueryPlanner {
         });
     }
 
+    @Transactional
     @Override
     public void convertMonthObservation(MonthObservation dto) {
         Long zoneFlag = 1L;
+        List<CsvRow> finalCsvRows = new ArrayList<>();
         for (List<Long> monthObservation : dto.getMonthObservations()) {
+            if(monthObservation.size() != 15) throw new IllegalArgumentException("monthObservations size must be 15");
             for (int j = 0; j < monthObservation.size(); j++) {
                 CsvRow csvRow = new CsvRow();
                 csvRow.setMonth(dto.getMonth());
@@ -99,16 +113,21 @@ public class QueryPlannerImpl implements QueryPlanner {
                 csvRow.setCount(monthObservation.get(j));
                 csvRow.setType(j > 10 ? "recovery" : "crime");
                 csvRow.setSubType(subTypeList.get(j + 1L));
-                neo4jService.executeWithoutResult(queryTemplate, parseRowToParams(csvRow));
+                finalCsvRows.add(csvRow);
             }
             zoneFlag++;
+        }
+        if(finalCsvRows.size() == 255){
+            for(CsvRow csvRow : finalCsvRows) {
+                neo4jService.executeWithoutResult(queryTemplate, parseRowToParams(csvRow));
+            }
         }
     }
 
     private Map<String, Object> getParams(Zone zone, Month month, EventType type, EventSubType subType, Observation observation) {
-        System.out.println(zone.toString() +   month.toString() +  type.toString() + subType.toString() + observation.toString());
         observation.setId(zone.getName() + '-' + subType.getName() + '-'
                 + month.getMonth().toString() + '-' + month.getYear().toString());
+        System.out.println(zone + month.toString() + type.toString() + subType + observation);
         return Map.ofEntries(
                 Map.entry("zoneName", zone.getName()),
                 Map.entry("zoneDivision", zone.getDivision()),

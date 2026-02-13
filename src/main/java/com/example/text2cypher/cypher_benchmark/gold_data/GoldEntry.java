@@ -10,9 +10,11 @@ public class GoldEntry {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(columnDefinition = "TEXT")
     private String question;
     @Column(columnDefinition = "TEXT")
     private String goldCqp;
+    @Column(columnDefinition = "TEXT")
     private String goldResult;
     @Column(columnDefinition = "TEXT")
     private String goldProvenance;

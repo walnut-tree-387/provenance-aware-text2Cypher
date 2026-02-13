@@ -12,7 +12,7 @@ public final class Difference implements PostAggregation {
     private String right;
     private String name;
     @Override
-    public String name() {
+    public String getName() {
         return name;
     }
 

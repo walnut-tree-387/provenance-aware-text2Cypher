@@ -14,7 +14,7 @@ public final class Comparison implements PostAggregation {
     private String right;
 
     @Override
-    public String name() {
+    public String getName() {
         return name;
     }
 

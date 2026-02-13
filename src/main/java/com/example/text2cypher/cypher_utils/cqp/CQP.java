@@ -2,10 +2,13 @@ package com.example.text2cypher.cypher_utils.cqp;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.util.List;
 
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class CQP {
     private Fact fact;
     private List<Filter> filters;

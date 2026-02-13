@@ -1,4 +1,4 @@
-package com.example.text2cypher.ais_evaluation.ais.compilers;
+package com.example.text2cypher.ais_evaluation.compiler;
 
 import com.example.text2cypher.ais_evaluation.ais.AIS;
 import com.example.text2cypher.ais_evaluation.ais.axes.AISAxis;

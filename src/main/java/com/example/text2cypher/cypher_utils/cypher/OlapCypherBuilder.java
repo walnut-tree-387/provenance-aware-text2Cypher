@@ -59,7 +59,7 @@ public class OlapCypherBuilder {
                                 ops.get(0),
                                 p.getType().value,
                                 ops.get(1),
-                                p.name()
+                                p.getName()
                         );
                     })
                     .collect(Collectors.joining(", "));
@@ -106,7 +106,7 @@ public class OlapCypherBuilder {
         List<List<PostAggregation>> layers = new ArrayList<>();
         Set<String> resolved = new HashSet<>();
         Set<String> allPostAggNames = posts.stream()
-                .map(PostAggregation::name)
+                .map(PostAggregation::getName)
                 .collect(Collectors.toSet());
 
         List<PostAggregation> remaining = new ArrayList<>(posts);
@@ -123,7 +123,7 @@ public class OlapCypherBuilder {
             }
 
             layers.add(layer);
-            layer.forEach(p -> resolved.add(p.name()));
+            layer.forEach(p -> resolved.add(p.getName()));
             remaining.removeAll(layer);
         }
         return layers;

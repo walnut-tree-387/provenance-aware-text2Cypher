@@ -1,25 +1,14 @@
-package com.example.text2cypher.ais_evaluation;
+package com.example.text2cypher.ais_evaluation.utils;
 import com.example.text2cypher.ais_evaluation.ais.AIS;
+import com.example.text2cypher.utils.LocalMapper;
 import org.springframework.stereotype.Service;
-import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.ObjectMapper;
-
-import java.util.Map;
 
 @Service
 public class AISNormalizer {
-
-    private final ObjectMapper objectMapper = new ObjectMapper();
     public AIS normalizeAIS(String llmOutput) {
         String cleaned = preprocess(llmOutput);
         String json = extractJson(cleaned);
-        AIS ais = new AIS();
-        try {
-            ais = objectMapper.readValue(json, AIS.class);
-        } catch (Exception e) {
-            throw new IllegalStateException("Failed to parse JSON from LLM output", e);
-        }
-        return ais;
+        return LocalMapper.read(json, AIS.class);
     }
     private String preprocess(String raw) {
         String s = raw;
@@ -42,7 +31,6 @@ public class AISNormalizer {
         if (start >= 0 && end > start) {
             return text.substring(start, end + 1);
         }
-
         throw new IllegalStateException("No JSON object found");
     }
 }

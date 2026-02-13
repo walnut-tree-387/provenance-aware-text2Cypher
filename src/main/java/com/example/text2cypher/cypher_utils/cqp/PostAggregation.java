@@ -4,7 +4,7 @@ import java.util.List;
 
 public sealed interface PostAggregation
         permits Ratio, Difference, Comparison {
-    String name();
+    String getName();
     PostAggregationType getType();
     List<String> getOperands();
 }

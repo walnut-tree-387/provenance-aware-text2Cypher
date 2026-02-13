@@ -2,7 +2,7 @@ package com.example.text2cypher.cypher_benchmark.paraphraser;
 
 import org.springframework.stereotype.Component;
 
-import static com.example.text2cypher.ais_evaluation.AISPromptBuilder.getGraphSchemaForAIS;
+import static com.example.text2cypher.ais_evaluation.utils.AISPromptBuilder.getGraphSchemaForAIS;
 @Component
 public class ParaphrasingPromptBuilder {
     public String buildParaphrasePrompt(String protoNL) {

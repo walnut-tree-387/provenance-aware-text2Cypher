@@ -14,7 +14,7 @@ public final class Ratio implements PostAggregation{
     private String name;
 
     @Override
-    public String name() {
+    public String getName() {
         return name;
     }
 

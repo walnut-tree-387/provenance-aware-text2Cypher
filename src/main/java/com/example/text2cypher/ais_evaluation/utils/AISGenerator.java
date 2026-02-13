@@ -1,4 +1,4 @@
-package com.example.text2cypher.ais_evaluation;
+package com.example.text2cypher.ais_evaluation.utils;
 import com.example.text2cypher.ais_evaluation.ais.AIS;
 import com.example.text2cypher.groq.client.GroqClient;
 import com.example.text2cypher.groq.dto.GroqChatResponse;

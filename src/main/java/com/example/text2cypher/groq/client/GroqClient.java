@@ -7,9 +7,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.List;
+import java.util.Random;
 
 @Component
 public class GroqClient {
+    private final Random random = new Random();
 
     private final WebClient webClient;
 
@@ -23,7 +25,7 @@ public class GroqClient {
                 .messages(List.of(
                         new GroqMessage("user", prompt)
                 ))
-                .temperature(0.7)
+                .temperature(random.nextFloat(0.7f, 1.0f))
                 .build();
 
         try {

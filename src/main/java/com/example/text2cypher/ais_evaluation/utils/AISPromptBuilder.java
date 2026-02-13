@@ -1,4 +1,4 @@
-package com.example.text2cypher.ais_evaluation;
+package com.example.text2cypher.ais_evaluation.utils;
 
 import org.springframework.stereotype.Component;
 

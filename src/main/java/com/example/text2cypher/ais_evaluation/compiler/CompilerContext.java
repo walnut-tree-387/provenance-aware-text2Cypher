@@ -1,4 +1,4 @@
-package com.example.text2cypher.ais_evaluation.ais.compilers;
+package com.example.text2cypher.ais_evaluation.compiler;
 
 import com.example.text2cypher.cypher_utils.cqp.Dimension;
 import com.example.text2cypher.cypher_utils.cqp.Measure;
