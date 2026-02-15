@@ -10,14 +10,14 @@ import java.util.*;
 public class ExactMatchAccuracy {
     private static final LinkedHashMap<String, String> aliasMap = new LinkedHashMap<>();
     public static Long getPredictedScore(CQP predicted){
+        convertMonthCodeFilter(predicted.getFilters());
         long predictedScore = predicted.getReturnClauses().size() + predicted.getOrderClauses().size() + predicted.getMeasures().size() +
                 predicted.getFilters().size() + predicted.getGroupBy().size() + predicted.getPostAggregations().size();
         if(predicted.getLimit() != null) predictedScore++;
         if(predicted.getOffset() != null) predictedScore++;
         return predictedScore;
     }
-    public static Long getCorrectScore(String gold, CQP predicted){
-        CQP goldCQP = LocalMapper.read(gold, CQP.class);
+    public static Long getCorrectScore(CQP goldCQP, CQP predicted){
         Long correct = 0L;
         correct += getFilterMatchScore(goldCQP.getFilters(), predicted.getFilters());
         correct += getGroupKeyScore(goldCQP.getGroupBy(), predicted.getGroupBy());
@@ -33,12 +33,9 @@ public class ExactMatchAccuracy {
         long score = 0L;
         List<String> remainingPredicted = new ArrayList<>(predicted);
         for(String goldKey : gold){
-            Optional<String> match = remainingPredicted.stream()
-                    .filter(s -> s.equals(aliasMap.get(goldKey))).findFirst();
-            if(match.isPresent()){
-                score++;
-                remainingPredicted.remove(match.get());
-            }
+            // if prediction projection list has correspondence of gold projection alias then score increase.
+            boolean isPresent = remainingPredicted.stream().anyMatch(p -> p.equals(aliasMap.get(goldKey)));
+            if(isPresent)score++;
         }
         return score;
     }
@@ -103,6 +100,7 @@ public class ExactMatchAccuracy {
     }
     private static Long getFilterMatchScore(List<Filter> gold, List<Filter> predicted){
         if(gold == null || predicted == null || gold.isEmpty() || predicted.isEmpty()) return 0L;
+        convertMonthCodeFilter(gold);
         long correctlyPredicted = 0L;
         List<Filter> remainingPredicted = new ArrayList<>(predicted);
         for (Filter goldFilter : gold) {
@@ -116,27 +114,47 @@ public class ExactMatchAccuracy {
         }
         return correctlyPredicted;
     }
-    private static boolean filtersExactlyMatch(Filter a, Filter b) {
-        return a.getDimension() == b.getDimension()
-                && a.getOperator() == b.getOperator()
-                && Objects.equals(a.getValue(), b.getValue());
+    private static boolean filtersExactlyMatch(Filter gold, Filter predicted) {
+        return gold.getDimension() == predicted.getDimension()
+                && gold.getOperator() == predicted.getOperator()
+                && Objects.equals(gold.getValue(), predicted.getValue());
     }
-    private static boolean measureExactlyMatch(Measure a, Measure b) {
-        return a.getAggregationType() == b.getAggregationType()
-                && getFilterMatchScore(a.getFilters(), b.getFilters()) == (a.getFilters().size());
+    private static boolean measureExactlyMatch(Measure predicted, Measure gold) {
+        if(!predicted.getAggregationType().equals(gold.getAggregationType())) return false;
+        Long localFilterScore = getFilterMatchScore(gold.getFilters(), predicted.getFilters());
+        return localFilterScore == gold.getFilters().size();
     }
-    private static boolean postAggregationExactlyMatch(PostAggregation a, PostAggregation b) {
-        boolean matchFlag = true;
-        for(String alias : b.getOperands()) {
-            if(alias.equals(aliasMap.get(alias))) {
-                matchFlag = false;
-                break;
+    private static boolean postAggregationExactlyMatch(PostAggregation predicted, PostAggregation gold) {
+        // If both post-aggregation type and operands match with respective order then it's a match
+        if(predicted.getType() != gold.getType()) return false;
+        return predicted.getOparandList().getFirst().equals(aliasMap.get(gold.getOparandList().getFirst()))
+                && (predicted.getOparandList().getLast().equals(aliasMap.get(gold.getOparandList().getLast()))
+                || predicted.getOparandList().getLast().equals(gold.getOparandList().getLast()));
+    }
+    private static boolean orderExactMatch(OrderSpec predicted, OrderSpec gold) {
+        if(!predicted.getDirection().equals(gold.getDirection()) || !predicted.getOrderType().equals(gold.getOrderType()))return false;
+        return predicted.getField().equals(aliasMap.get(gold.getField()));
+    }
+
+    private static void convertMonthCodeFilter(List<Filter> filters) {
+        Filter monthCodeFilter = null;
+        int month = -1;
+        int year = -1;
+        for(Filter filter : filters) {
+            if (filter.getDimension() == Dimension.MONTH_CODE
+                    && filter.getOperator() == Operator.EQ) {
+                String monthCode = filter.getValue().toString();
+                String[] parts = monthCode.split("-");
+                year = Integer.parseInt(parts[0]);
+                month = Integer.parseInt(parts[1]);
+                monthCodeFilter = filter;
             }
         }
-        return a.getType() == b.getType() && matchFlag;
+        if(monthCodeFilter != null && month != -1 && year != -1){
+            filters.remove(monthCodeFilter);
+            filters.add(new Filter(Dimension.MONTH, Operator.EQ, month));
+            filters.add(new Filter(Dimension.MONTH_YEAR, Operator.EQ, year));
+        }
     }
-    private static boolean orderExactMatch(OrderSpec a, OrderSpec b) {
-        return a.getDirection().equals(b.getDirection()) && a.getOrderType().equals(b.getOrderType())
-                && b.getField().equals(aliasMap.get(a.getField()));
-    }
+
 }

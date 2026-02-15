@@ -1,4 +1,5 @@
 package com.example.text2cypher.utils;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
@@ -40,6 +41,16 @@ public final class LocalMapper {
         } catch (Exception e) {
             throw new IllegalStateException(
                     "Failed to read JSON list",
+                    e
+            );
+        }
+    }
+    public static JsonNode convertToJsonNode(Object value) {
+        try {
+            return objectMapper.valueToTree(value);
+        } catch (Exception e) {
+            throw new IllegalStateException(
+                    "Failed to convert object to JsonNode",
                     e
             );
         }

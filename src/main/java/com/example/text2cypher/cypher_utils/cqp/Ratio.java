@@ -1,5 +1,6 @@
 package com.example.text2cypher.cypher_utils.cqp;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -23,8 +24,14 @@ public final class Ratio implements PostAggregation{
         return PostAggregationType.RATIO;
     }
 
+    @JsonIgnore
     @Override
-    public List<String> getOperands() {
+    public List<String> getCypherOperands() {
         return List.of("toFloat(" + numerator + ")", denominator);
+    }
+    @JsonIgnore
+    @Override
+    public List<String> getOparandList() {
+        return List.of(numerator, denominator);
     }
 }

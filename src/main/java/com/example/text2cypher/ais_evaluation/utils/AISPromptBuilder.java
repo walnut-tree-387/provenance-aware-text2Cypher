@@ -109,7 +109,7 @@ public final class AISPromptBuilder {
         Each AISDerivedIntent MUST contain:
         - name: unique identifier of the derived value, used in projection.
         - type: one of AISDerivedType
-        - operands: list of AISIntent names used in the computation
+        - operands: Must have exactly two operands in double quotation as strings or else should be kept empty. Anything else like single operands or more then 2 operands will be penalized as wrong answer.
         
         Possible Derived Intent Types:
         1. DIFFERENCE
@@ -154,7 +154,7 @@ public final class AISPromptBuilder {
          - If required operands are missing, they MUST be generated as AISIntents.
         
         GENERAL RULES
-        1. DerivedIntent operands MUST reference existing AISIntent names.
+        1. DerivedIntent operands MUST reference existing two AISIntent names exactly or else should be kept empty.
         2. DerivedIntent MUST NOT define context or filters.
         3. Do NOT invent new DerivedIntentTypes.
         4. If a statistical term maps to a known canonical ratio, use RATIO.

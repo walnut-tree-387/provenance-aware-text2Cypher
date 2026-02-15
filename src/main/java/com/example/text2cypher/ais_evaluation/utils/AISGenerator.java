@@ -3,6 +3,7 @@ import com.example.text2cypher.ais_evaluation.ais.AIS;
 import com.example.text2cypher.groq.client.GroqClient;
 import com.example.text2cypher.groq.dto.GroqChatResponse;
 import com.example.text2cypher.cypher_benchmark.paraphraser.ParaphraseNormalizer;
+import com.example.text2cypher.utils.SleeperCoach;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -43,7 +44,6 @@ public class AISGenerator {
     }
     public Map<String, AIS> generateAIS(String question) {
         String prompt = promptBuilder.buildAISPrompt(question);
-        System.out.println("prompt Length = " + prompt.length());
         List<String> models = List.of(
                 "openai/gpt-oss-120b",
                 "llama-3.3-70b-versatile",
@@ -59,6 +59,7 @@ public class AISGenerator {
                     .getMessage()
                     .getContent();
             answers.put(model, answerNormalizer.normalizeAIS(rawText));
+            SleeperCoach.sleepMinutes(25000);
         }
         return answers;
     }

@@ -5,11 +5,11 @@ import com.example.text2cypher.cypher_benchmark.dto.OlapQueryDto;
 import com.example.text2cypher.cypher_benchmark.dto.PostAggregationDto;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Component
 public class OlapCqpFactory {
+    private final Map<Dimension, Set<Object>> convertedGlobalContext = new HashMap<>();
     public CQP fromDto(OlapQueryDto dto) {
         return new CQP(
                 Fact.OBSERVATION_COUNT,
@@ -25,7 +25,14 @@ public class OlapCqpFactory {
         );
     }
     private List<Filter> compileProvenanceFilters(){
-        return new ArrayList<>();
+        List<Filter> provenanceFilters = new ArrayList<>();
+        for(Dimension key : convertedGlobalContext.keySet()) {
+            Filter filter = new Filter(key, Operator.IN, convertedGlobalContext.get(key));
+            provenanceFilters.add(filter);
+        }
+        convertedGlobalContext.clear();
+        provenanceFilters.add(new Filter(Dimension.OBSERVATION_COUNT, Operator.GT, 0));
+        return provenanceFilters;
     }
     private List<Filter> compileFilters(OlapQueryDto dto) {
         return (dto.getFilters() == null) ? List.of() : dto.getFilters();
@@ -42,6 +49,7 @@ public class OlapCqpFactory {
                                 m.getFilters()
                         )
                 )
+                .peek(m -> extractGlobalInContext(m.getFilters()))
                 .toList();
     }
     private List<OrderSpec> compileOrder(OlapQueryDto dto) {
@@ -78,6 +86,24 @@ public class OlapCqpFactory {
                     spec.getArgs().getLast()
             );
         };
+    }
+    private void extractGlobalInContext(List<Filter> filters) {
+        if(filters == null) return;
+        for (Filter filter : filters) {
+            Dimension dimension = filter.getDimension();
+            Operator operator = filter.getOperator();
+            Object value = filter.getValue();
+            if (operator == Operator.EQ) {
+                convertedGlobalContext
+                        .computeIfAbsent(dimension, d -> new HashSet<>())
+                        .add(value);
+            }
+            else if (operator == Operator.IN) {
+                convertedGlobalContext
+                        .computeIfAbsent(dimension, d -> new HashSet<>())
+                        .addAll((List<?>) value);
+            }
+        }
     }
 }
 

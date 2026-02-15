@@ -1,5 +1,6 @@
 package com.example.text2cypher.cypher_utils.cqp;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -21,8 +22,14 @@ public final class Difference implements PostAggregation {
         return PostAggregationType.DIFFERENCE;
     }
 
+    @JsonIgnore
     @Override
-    public List<String> getOperands() {
+    public List<String> getCypherOperands() {
+        return List.of(left, right);
+    }
+    @JsonIgnore
+    @Override
+    public List<String> getOparandList() {
         return List.of(left, right);
     }
 }

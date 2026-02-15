@@ -59,7 +59,7 @@ public class AIStoCQPCompiler {
     }
 
     private Fact compileFact(AISFact f) {
-        return new Fact(f.getNode(), f.getField());
+        return new Fact("Observation", "count");
     }
     private Filter compileFilter(AISContext c) {
         Dimension dimension = EnumCompiler.compileDimension(c.getDimension());
@@ -103,7 +103,7 @@ public class AIStoCQPCompiler {
         return normalized.replaceAll("[^a-z0-9_]", "_");
     }
     private PostAggregation compilePostAggregation(PostAggregationType type, List<String> operands, String alias) {
-        if(operands.isEmpty()) return null;
+        if(operands.size() != 2) return null;
         return switch (type) {
             case RATIO -> new Ratio(operands.get(0),  operands.get(1), alias);
             case DIFFERENCE -> new Difference(operands.get(0),  operands.get(1), alias);
@@ -135,6 +135,7 @@ public class AIStoCQPCompiler {
                 .toList();
     }
     private void extractGlobalInContext(List<Filter> filters) {
+        if(filters == null) return;
         for (Filter filter : filters) {
             Dimension dimension = filter.getDimension();
             Operator operator = filter.getOperator();

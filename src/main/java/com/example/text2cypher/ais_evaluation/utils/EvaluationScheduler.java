@@ -5,15 +5,21 @@ import com.example.text2cypher.ais_evaluation.compiler.AIStoCQPCompiler;
 import com.example.text2cypher.ais_evaluation.record.EvaluationService;
 import com.example.text2cypher.cypher_benchmark.gold_data.GoldEntry;
 import com.example.text2cypher.cypher_benchmark.gold_data.GoldEntryRepository;
+import com.example.text2cypher.cypher_benchmark.gold_data.GoldEntryService;
 import com.example.text2cypher.cypher_utils.cqp.CQP;
 import com.example.text2cypher.cypher_utils.cypher.OlapCypherBuilder;
 import com.example.text2cypher.cypher_utils.cypher.OlapCypherResponse;
 import com.example.text2cypher.cypher_utils.cypher.OlapCypherResponseMapper;
 import com.example.text2cypher.neo4j.Neo4jService;
+import com.example.text2cypher.utils.LocalMapper;
 import com.example.text2cypher.utils.SleeperCoach;
+import org.springframework.cglib.core.Local;
+import org.springframework.data.util.Pair;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -22,14 +28,16 @@ import static com.example.text2cypher.ais_evaluation.utils.ProvenanceChecker.che
 @Component
 public class EvaluationScheduler {
     private final GoldEntryRepository goldEntryRepository;
+    private final GoldEntryService goldEntryService;
     private final EvaluationService evaluationService;
     private final Neo4jService neo4jService;
     private final AIStoCQPCompiler cqpCompiler;
     private final AISGenerator aisGenerator;
     private final OlapCypherBuilder cypherBuilder;
 
-    public EvaluationScheduler(GoldEntryRepository goldEntryRepository, EvaluationService evaluationService, Neo4jService neo4jService, AIStoCQPCompiler cqpCompiler, AISGenerator aisGenerator, OlapCypherBuilder cypherBuilder) {
+    public EvaluationScheduler(GoldEntryRepository goldEntryRepository, GoldEntryService goldEntryService, EvaluationService evaluationService, Neo4jService neo4jService, AIStoCQPCompiler cqpCompiler, AISGenerator aisGenerator, OlapCypherBuilder cypherBuilder) {
         this.goldEntryRepository = goldEntryRepository;
+        this.goldEntryService = goldEntryService;
         this.evaluationService = evaluationService;
         this.neo4jService = neo4jService;
         this.cqpCompiler = cqpCompiler;
@@ -41,12 +49,13 @@ public class EvaluationScheduler {
     public void process(){
         List<GoldEntry> goldEntries = goldEntryRepository.findByProcessed();
         for (GoldEntry goldEntry : goldEntries) {
+            CQP goldCQP = LocalMapper.read(goldEntry.getGoldCqp(), CQP.class);
             Map<String, AIS> aisList = aisGenerator.generateAIS(goldEntry.getQuestion());
             for(String key:  aisList.keySet()){
                 AIS ais = aisList.get(key);
                 CQP testCQP = cqpCompiler.mapToCQP(ais);
                 Long predictedScore = ExactMatchAccuracy.getPredictedScore(testCQP);
-                Long correctScore = ExactMatchAccuracy.getCorrectScore(goldEntry.getGoldCqp(), testCQP);
+                Long correctScore = ExactMatchAccuracy.getCorrectScore(goldCQP, testCQP);
                 String testCypher = cypherBuilder.build(testCQP);
                 OlapCypherResponse testResponse = null;
                 try{
@@ -56,10 +65,24 @@ public class EvaluationScheduler {
                 }catch (Exception e){
                     evaluationService.create(key, ais, goldEntry.getQuestion(), goldEntry, testCQP, testCypher, null, predictedScore, correctScore, false, false);
                 }
-                SleeperCoach.sleepMinutes(1);
+                SleeperCoach.sleepMinutes(20000);
 //                goldEntry.setProcessed(true);
 //                goldEntryRepository.save(goldEntry);
             }
         }
+    }
+    public Map<String, Map<AIS, List<Long>> > evaluateGoldEntry(Long id){
+        GoldEntry goldEntry = goldEntryService.findById(id);
+        CQP goldCQP = LocalMapper.read(goldEntry.getGoldCqp(), CQP.class);
+        Map<String, AIS> aisList = aisGenerator.generateAIS(goldEntry.getQuestion());
+        Map<String, Map<AIS, List<Long>> > result = new HashMap<>();
+        for(String key:  aisList.keySet()) {
+            AIS ais = aisList.get(key);
+            CQP testCQP = cqpCompiler.mapToCQP(ais);
+            Long predictedScore = ExactMatchAccuracy.getPredictedScore(testCQP);
+            Long correctScore = ExactMatchAccuracy.getCorrectScore(goldCQP, testCQP);
+            result.put(key, Map.of(ais, List.of(predictedScore, correctScore)));
+        }
+        return result;
     }
 }

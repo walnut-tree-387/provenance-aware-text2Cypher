@@ -1,5 +1,6 @@
 package com.example.text2cypher.cypher_benchmark.paraphraser;
 
+import com.example.text2cypher.cypher_benchmark.dto.QueryType;
 import com.example.text2cypher.groq.client.GroqClient;
 import com.example.text2cypher.groq.dto.GroqChatResponse;
 import org.springframework.stereotype.Service;
@@ -17,9 +18,9 @@ public class ProtoNLParaphraser {
         this.promptBuilder = promptBuilder;
     }
 
-    public List<String> paraphrase(String protoNL) {
+    public List<String> paraphrase(QueryType queryType, String protoNL) {
         List<String> paraphrases = new ArrayList<>();
-        String prompt = promptBuilder.buildParaphrasePrompt(protoNL);
+        String prompt = promptBuilder.buildParaphrasePrompt(queryType, protoNL);
         List<String> models = List.of(
                 "openai/gpt-oss-120b",
                 "llama-3.3-70b-versatile",

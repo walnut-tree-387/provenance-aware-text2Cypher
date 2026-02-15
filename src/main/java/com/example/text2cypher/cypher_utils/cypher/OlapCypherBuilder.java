@@ -53,7 +53,7 @@ public class OlapCypherBuilder {
         for (List<PostAggregation> layer : layers) {
             String calculations = layer.stream()
                     .map(p -> {
-                        List<String> ops = p.getOperands();
+                        List<String> ops = p.getCypherOperands();
                         return String.format(
                                 "%s %s %s AS %s",
                                 ops.get(0),
@@ -113,7 +113,7 @@ public class OlapCypherBuilder {
 
         while (!remaining.isEmpty()) {
             List<PostAggregation> layer = remaining.stream()
-                    .filter(p -> p.getOperands().stream().allMatch(op ->
+                    .filter(p -> p.getCypherOperands().stream().allMatch(op ->
                             !allPostAggNames.contains(op) || resolved.contains(op)
                     ))
                     .toList();

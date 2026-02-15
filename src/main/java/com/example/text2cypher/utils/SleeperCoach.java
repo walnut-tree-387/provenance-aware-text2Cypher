@@ -1,9 +1,9 @@
 package com.example.text2cypher.utils;
 
 public class SleeperCoach {
-    public static void sleepMinutes(long minutes) {
+    public static void sleepMinutes(long milSec) {
         try {
-            Thread.sleep(minutes * 60_000);
+            Thread.sleep(milSec);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Thread was interrupted while sleeping", e);

@@ -45,14 +45,15 @@ public class BenchmarkProducer {
         List<Record> recordList = neo4jService.fetch(cypherBuilder.build(cqp));
         return OlapCypherResponseMapper.map(recordList, cqp.getReturnClauses());
     }
-    public void produce(OlapQueryDto requestDto){
+    public List<String> produce(OlapQueryDto requestDto){
         CQP goldCqp = cqpFactory.fromDto(requestDto);
         String protoNL = protoNLGenerator.generate(requestDto);
-        List<String> paraphraseList = protoNLParaphraser.paraphrase(protoNL);
+        List<String> paraphraseList = protoNLParaphraser.paraphrase(requestDto.getQueryType(), protoNL);
         String goldCypher = cypherBuilder.build(goldCqp);
         OlapCypherResponse goldResponse = OlapCypherResponseMapper.map(neo4jService.fetch(goldCypher), goldCqp.getReturnClauses());
         paraphraseList.forEach(question ->
-                goldEntryService.create(goldCypher, LocalMapper.write(goldResponse.nodeList()),
+                goldEntryService.create(protoNL, goldCypher, LocalMapper.write(goldResponse.nodeList()),
                         LocalMapper.write(goldResponse.results()), LocalMapper.write(goldCqp), question));
+        return paraphraseList;
     }
 }
