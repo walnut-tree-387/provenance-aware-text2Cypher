@@ -3,9 +3,7 @@ package com.example.text2cypher.cypher_utils.cqp;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Data
 @AllArgsConstructor
@@ -64,37 +62,37 @@ public class Filter {
             default -> throw new IllegalStateException("Unsupported value type: " + this.value.getClass());
         }
     }
-//    @Override
-//    public boolean equals(Object o) {
-//        if (this == o) return true;
-//        if (!(o instanceof Filter other)) return false;
-//
-//        if (dimension != other.dimension) return false;
-//        if (operator != other.operator) return false;
-//
-//        return valuesEqual(value, other.value);
-//    }
-//
-//    @Override
-//    public int hashCode() {
-//        return Objects.hash(
-//                dimension,
-//                operator,
-//                normalizedValue(value)
-//        );
-//    }
-//
-//    private boolean valuesEqual(Object v1, Object v2) {
-//        if (v2 instanceof List<?> l2) {
-//            return (v1).equals(new HashSet<>(l2));
-//        }
-//        return Objects.equals(v1, v2);
-//    }
-//
-//    private Object normalizedValue(Object v) {
-//        if (v instanceof List<?> list) {
-//            return new HashSet<>(list);
-//        }
-//        return v;
-//    }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Filter other)) return false;
+
+        if (dimension != other.dimension) return false;
+        if (operator != other.operator) return false;
+
+        return valuesEqual(value, other.value);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+                dimension,
+                operator,
+                normalizedValue(value)
+        );
+    }
+
+    private boolean valuesEqual(Object v1, Object v2) {
+        if (v2 instanceof List<?> l2) {
+            return (v1).equals(new HashSet<>(l2));
+        }
+        return Objects.equals(v1, v2);
+    }
+
+    private Object normalizedValue(Object v) {
+        if (v instanceof List<?> list) {
+            return new HashSet<>(list);
+        }
+        return v;
+    }
 }

@@ -33,7 +33,7 @@ public class AISGenerator {
         );
         List<String> answers = new ArrayList<>();
         for(String model: models){
-            GroqChatResponse response = groqClient.chatCompletion(prompt, model);
+            GroqChatResponse response = groqClient.chatCompletion(0.0f, prompt, model);
             String rawText = response.getChoices()
                     .getFirst()
                     .getMessage()
@@ -51,15 +51,17 @@ public class AISGenerator {
                 "qwen/qwen3-32b"
         );
         Map<String, AIS> answers = new HashMap<>();
+        long cycle = 0;
         for(String model: models){
-            GroqChatResponse response = groqClient.chatCompletion(prompt, model);
-            if(response.getChoices() == null)continue;
+            GroqChatResponse response = groqClient.chatCompletion(0.0f, prompt, model);
+            cycle++;
+            if(response == null)continue;
             String rawText = response.getChoices()
                     .getFirst()
                     .getMessage()
                     .getContent();
             answers.put(model, answerNormalizer.normalizeAIS(rawText));
-            SleeperCoach.sleepMinutes(25000);
+            if(cycle <= 3)SleeperCoach.sleepMinutes(30000);
         }
         return answers;
     }

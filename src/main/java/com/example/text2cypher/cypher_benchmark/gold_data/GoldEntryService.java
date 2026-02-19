@@ -12,9 +12,10 @@ public class GoldEntryService {
     public GoldEntry findById(Long id) {
         return goldEntryRepository.findById(id).orElse(null);
     }
-    public void create(String protoNL, String goldCypher, String goldProvenance, String goldResult, String goldCqp, String nlQuestion) {
+    public void create(String modelName, String protoNL, String goldCypher, String goldProvenance, String goldResult, String goldCqp, String nlQuestion) {
         GoldEntry goldEntry = new GoldEntry();
         goldEntry.setGoldCqp(goldCqp);
+        goldEntry.setModelName(modelName);
         goldEntry.setProtoNL(protoNL);
         goldEntry.setGoldCypher(goldCypher);
         goldEntry.setGoldResult(goldResult);

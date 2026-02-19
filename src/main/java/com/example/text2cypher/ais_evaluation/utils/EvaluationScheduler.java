@@ -13,11 +13,7 @@ import com.example.text2cypher.cypher_utils.cypher.OlapCypherResponseMapper;
 import com.example.text2cypher.neo4j.Neo4jService;
 import com.example.text2cypher.utils.LocalMapper;
 import com.example.text2cypher.utils.SleeperCoach;
-import org.springframework.cglib.core.Local;
-import org.springframework.data.util.Pair;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import tools.jackson.databind.JsonNode;
 
 import java.util.HashMap;
 import java.util.List;
@@ -66,8 +62,8 @@ public class EvaluationScheduler {
                     evaluationService.create(key, ais, goldEntry.getQuestion(), goldEntry, testCQP, testCypher, null, predictedScore, correctScore, false, false);
                 }
                 SleeperCoach.sleepMinutes(20000);
-//                goldEntry.setProcessed(true);
-//                goldEntryRepository.save(goldEntry);
+                goldEntry.setProcessed(true);
+                goldEntryRepository.save(goldEntry);
             }
         }
     }
@@ -78,11 +74,19 @@ public class EvaluationScheduler {
         Map<String, Map<AIS, List<Long>> > result = new HashMap<>();
         for(String key:  aisList.keySet()) {
             AIS ais = aisList.get(key);
+            if(ais == null)continue;
             CQP testCQP = cqpCompiler.mapToCQP(ais);
             Long predictedScore = ExactMatchAccuracy.getPredictedScore(testCQP);
             Long correctScore = ExactMatchAccuracy.getCorrectScore(goldCQP, testCQP);
             result.put(key, Map.of(ais, List.of(predictedScore, correctScore)));
         }
         return result;
+    }
+    public Long checkAis(AIS ais, Long goldEntry){
+        GoldEntry entry = goldEntryService.findById(goldEntry);
+        CQP goldCQP = LocalMapper.read(entry.getGoldCqp(), CQP.class);
+        CQP testCQP = cqpCompiler.mapToCQP(ais);
+        Long predictedScore = ExactMatchAccuracy.getPredictedScore(testCQP);
+        return ExactMatchAccuracy.getCorrectScore(goldCQP, testCQP);
     }
 }

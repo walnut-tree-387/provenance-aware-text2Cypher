@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import org.neo4j.driver.Record;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class BenchmarkProducer {
@@ -45,15 +46,15 @@ public class BenchmarkProducer {
         List<Record> recordList = neo4jService.fetch(cypherBuilder.build(cqp));
         return OlapCypherResponseMapper.map(recordList, cqp.getReturnClauses());
     }
-    public List<String> produce(OlapQueryDto requestDto){
+    public Map<String, String> produce(OlapQueryDto requestDto){
         CQP goldCqp = cqpFactory.fromDto(requestDto);
         String protoNL = protoNLGenerator.generate(requestDto);
-        List<String> paraphraseList = protoNLParaphraser.paraphrase(requestDto.getQueryType(), protoNL);
+        Map<String, String> paraphraseList = protoNLParaphraser.paraphrase(requestDto.getQueryType(), protoNL);
         String goldCypher = cypherBuilder.build(goldCqp);
         OlapCypherResponse goldResponse = OlapCypherResponseMapper.map(neo4jService.fetch(goldCypher), goldCqp.getReturnClauses());
-        paraphraseList.forEach(question ->
-                goldEntryService.create(protoNL, goldCypher, LocalMapper.write(goldResponse.nodeList()),
-                        LocalMapper.write(goldResponse.results()), LocalMapper.write(goldCqp), question));
+        paraphraseList.keySet().forEach(modelName ->
+                goldEntryService.create(modelName, protoNL, goldCypher, LocalMapper.write(goldResponse.nodeList()),
+                        LocalMapper.write(goldResponse.results()), LocalMapper.write(goldCqp), paraphraseList.get(modelName)));
         return paraphraseList;
     }
 }

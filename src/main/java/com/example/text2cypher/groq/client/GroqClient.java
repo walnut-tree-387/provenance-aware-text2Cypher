@@ -19,13 +19,16 @@ public class GroqClient {
         this.webClient = groqWebClient;
     }
 
-    public GroqChatResponse chatCompletion(String prompt, String model) {
+    public GroqChatResponse chatCompletion(double temperature, String prompt, String model) {
         GroqChatRequest request = GroqChatRequest.builder()
                 .model(model)
                 .messages(List.of(
                         new GroqMessage("user", prompt)
                 ))
-                .temperature(random.nextFloat(0.7f, 1.0f))
+                .temperature(temperature)
+                .top_p(1.0f)
+                .max_completion_tokens(8192L)
+                .stream(false)
                 .build();
 
         try {
@@ -38,7 +41,6 @@ public class GroqClient {
         } catch (Exception e) {
             System.err.println("Groq API call failed: " + e.getMessage() +
                     " for request: " + request + " with model: " + model + " and prompt: " + prompt);
-            e.printStackTrace();
             return null;
         }
 

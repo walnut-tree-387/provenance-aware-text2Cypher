@@ -127,11 +127,7 @@ public class AIStoCQPCompiler {
     private List<String> compileProjections(List<String> projections) {
         return projections.stream()
                 .map(this::normalizeAlias)
-                .peek(alias -> {
-                    if (!compilerContext.hasAny(alias)) {
-                        throw new RuntimeException("Unknown projection alias: " + alias);
-                    }
-                })
+                .filter(compilerContext :: hasAny)
                 .toList();
     }
     private void extractGlobalInContext(List<Filter> filters) {

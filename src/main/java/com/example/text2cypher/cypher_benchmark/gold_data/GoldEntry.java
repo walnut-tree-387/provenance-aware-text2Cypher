@@ -22,5 +22,7 @@ public class GoldEntry {
     private String goldCypher;
     @Column(columnDefinition = "TEXT")
     private String protoNL;
+    @Column(columnDefinition = "TEXT")
+    private String modelName;
     private boolean processed = false;
 }

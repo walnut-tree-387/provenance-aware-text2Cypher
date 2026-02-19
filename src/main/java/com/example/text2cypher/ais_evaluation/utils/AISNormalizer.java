@@ -8,7 +8,11 @@ public class AISNormalizer {
     public AIS normalizeAIS(String llmOutput) {
         String cleaned = preprocess(llmOutput);
         String json = extractJson(cleaned);
-        return LocalMapper.read(json, AIS.class);
+        try{
+            return LocalMapper.read(json, AIS.class);
+        }catch(Exception e){
+            return null;
+        }
     }
     private String preprocess(String raw) {
         String s = raw;

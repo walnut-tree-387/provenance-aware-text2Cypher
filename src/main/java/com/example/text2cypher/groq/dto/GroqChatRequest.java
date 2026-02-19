@@ -11,4 +11,8 @@ public class GroqChatRequest {
     private String model;
     private List<GroqMessage> messages;
     private double temperature;
+    private double top_p;
+    private Long max_completion_tokens;
+    private boolean stream;
+    private String reasoning_effort;
 }

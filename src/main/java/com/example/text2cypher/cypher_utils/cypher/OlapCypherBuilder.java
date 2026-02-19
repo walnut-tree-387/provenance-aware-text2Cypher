@@ -54,13 +54,9 @@ public class OlapCypherBuilder {
             String calculations = layer.stream()
                     .map(p -> {
                         List<String> ops = p.getCypherOperands();
-                        return String.format(
-                                "%s %s %s AS %s",
-                                ops.get(0),
-                                p.getType().value,
-                                ops.get(1),
-                                p.getName()
-                        );
+                        return p.getType().equals(PostAggregationType.DIFFERENCE) ?
+                                String.format("abs(%s %s %s) AS %s", ops.get(0), p.getType().value, ops.get(1), p.getName())
+                                : String.format("%s %s %s AS %s", ops.get(0), p.getType().value, ops.get(1), p.getName());
                     })
                     .collect(Collectors.joining(", "));
 
@@ -98,8 +94,15 @@ public class OlapCypherBuilder {
     private void whereClause(List<Filter> filters, StringBuilder cypher) {
         if (filters.isEmpty()) return;
         cypher.append("WHERE ").append(filters.stream()
-                .map(f -> f.getDimension().getValue() + " " +
-                        f.getOperator().getValue() + " " + f.valueToCypher())
+                .map(f -> {
+                    String dim = f.getDimension().getValue();
+                    String op = f.getOperator().getValue();
+                    String val = f.valueToCypher();
+                    if ("NOT IN".equalsIgnoreCase(op)) {
+                        return "NOT " + dim + " IN " + val;
+                    }
+                    return dim + " " + op + " " + val;
+                })
                 .collect(Collectors.joining(" AND "))).append("\n");
     }
     private List<List<PostAggregation>> layerPostAggregations(List<PostAggregation> posts) {
