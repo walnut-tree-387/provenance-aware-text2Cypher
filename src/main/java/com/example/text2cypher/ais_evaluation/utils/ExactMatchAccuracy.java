@@ -33,18 +33,15 @@ public class ExactMatchAccuracy {
     private static boolean filtersEqual(List<Filter> gold, List<Filter> predicted) {
         Map<Dimension, Set<String>> goldDimensions = normalizer.normalize(gold);
         Map<Dimension, Set<String>> predictedDimensions = normalizer.normalize(predicted);
-        return (goldDimensions.get(Dimension.EVENT_SUBTYPE).equals(predictedDimensions.get(Dimension.EVENT_SUBTYPE))
-                || (goldDimensions.get(Dimension.EVENT_SUBTYPE).isEmpty() && predictedDimensions.get(Dimension.EVENT_SUBTYPE).equals(allEventSubTypes())))
-                && (goldDimensions.get(Dimension.MONTH_CODE).equals(predictedDimensions.get(Dimension.MONTH_CODE))
-                || (goldDimensions.get(Dimension.MONTH_CODE).isEmpty() && predictedDimensions.get(Dimension.MONTH_CODE).equals(allMonthCodes())))
-                && (goldDimensions.get(Dimension.ZONE_NAME).equals(predictedDimensions.get(Dimension.ZONE_NAME))
-                || (goldDimensions.get(Dimension.ZONE_NAME).isEmpty() && predictedDimensions.get(Dimension.ZONE_NAME).equals(allZoneNames())));
+        return goldDimensions.get(Dimension.EVENT_SUBTYPE).equals(predictedDimensions.get(Dimension.EVENT_SUBTYPE))
+                && goldDimensions.get(Dimension.MONTH_CODE).equals(predictedDimensions.get(Dimension.MONTH_CODE))
+                && goldDimensions.get(Dimension.ZONE_NAME).equals(predictedDimensions.get(Dimension.ZONE_NAME));
     }
     private static Long getMeasureScore(CQP goldCQP, CQP predictedCQP){
         long correctlyPredicted = 0L;
         List<Measure> remainingPredicted = new ArrayList<>(predictedCQP.getMeasures());
-        List<Filter> mergedGoldFilters = goldCQP.getFilters();
-        List<Filter> mergedPredictedFilters = predictedCQP.getFilters();
+        List<Filter> mergedGoldFilters = new ArrayList<>(goldCQP.getFilters());
+        List<Filter> mergedPredictedFilters = new ArrayList<>(predictedCQP.getFilters());
         for (Measure goldMeasure : goldCQP.getMeasures()) {
             mergedGoldFilters.addAll(goldMeasure.getFilters());
             Optional<Measure> match = Optional.empty();

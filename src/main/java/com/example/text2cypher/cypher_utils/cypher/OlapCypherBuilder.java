@@ -3,10 +3,7 @@ import com.example.text2cypher.cypher_utils.cqp.*;
 import com.example.text2cypher.cypher_utils.cqp.*;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -16,7 +13,8 @@ public class OlapCypherBuilder {
         StringBuilder cypher = new StringBuilder("MATCH (o:Observation)\n");
         matchClause(cypher);
         whereClause(cqp.getFilters(), cypher);
-        aggregationWithClause(cqp.getGroupBy(), cqp.getMeasures(), cqp.getProvenanceFilters(), cypher);
+        aggregationWithClause(cqp.getGroupBy(), cqp.getMeasures(), cypher);
+        provenanceClause(cypher, cqp.getProvenanceFilters());
         postAggregationClause(cqp.getPostAggregations(), cypher);
         orderClause(cqp.getOrderClauses(), cypher);
         limitAndOffsetClause(cqp.getLimit(), cqp.getOffset(), cypher);
@@ -54,9 +52,17 @@ public class OlapCypherBuilder {
             String calculations = layer.stream()
                     .map(p -> {
                         List<String> ops = p.getCypherOperands();
-                        return p.getType().equals(PostAggregationType.DIFFERENCE) ?
-                                String.format("abs(%s %s %s) AS %s", ops.get(0), p.getType().value, ops.get(1), p.getName())
-                                : String.format("%s %s %s AS %s", ops.get(0), p.getType().value, ops.get(1), p.getName());
+                        String op1 = ops.get(0);
+                        String op2 = ops.get(1);
+                        String name = p.getName();
+                        String symbol = p.getType().value;
+                        if (p.getType().equals(PostAggregationType.DIFFERENCE)) {
+                            return String.format("abs(%s %s %s) AS %s", op1, symbol, op2, name);
+                        } else if (p.getType().equals(PostAggregationType.RATIO)) {
+                            return String.format("%s / CASE WHEN %s = 0 THEN null ELSE %s END AS %s", op1, op2, op2, name);
+                        } else {
+                            return String.format("%s %s %s AS %s", op1, symbol, op2, name);
+                        }
                     })
                     .collect(Collectors.joining(", "));
 
@@ -64,7 +70,7 @@ public class OlapCypherBuilder {
         }
     }
     private void aggregationWithClause(List<GroupKey> groupBy,
-                                       List<Measure> measures, List<Filter> provenanceFilters, StringBuilder cypher) {
+                                       List<Measure> measures, StringBuilder cypher) {
         List<String> groupExpressionList = groupBy.stream()
                 .map(g -> g.getDimension().getValue() + " AS " + g.getAlias())
                 .toList();
@@ -75,11 +81,28 @@ public class OlapCypherBuilder {
                 .toList();
         cypher.append("WITH ").append(Stream.concat(groupExpressionList.stream(), measureExpressionList.stream())
                 .collect(Collectors.joining(", ")));
-        if(!provenanceFilters.isEmpty())cypher.append(", collect(CASE WHEN ").append(provenanceFilters.stream()
-                .map(f -> f.getDimension().getValue() + " " +
-                        f.getOperator().getValue() + " " + f.valueToCypher())
-                .collect(Collectors.joining(" AND "))).append(" THEN o ELSE NULL END) AS provenance").append("\n");
-        else cypher.append(", COLLECT(o) as provenance").append("\n");
+    }
+    private void provenanceClause(StringBuilder cypher, Map<Long, List<Map<Dimension, Set<String>>>> provenanceFilters) {
+        cypher.append(", collect(CASE \n" +
+                "    WHEN o.count > 0 ");
+        List<String> orParts = new ArrayList<>();
+        for (Map.Entry<Long, List<Map<Dimension, Set<String>>>> entry : provenanceFilters.entrySet()) {
+            StringJoiner andJoiner = new StringJoiner(" AND ", "(", ")");
+            for (Map<Dimension, Set<String>> dimensionMap : entry.getValue()) {
+                for (Dimension dimension : dimensionMap.keySet()) {
+                    Set<String> vals = dimensionMap.get(dimension);
+                    if (vals != null && !vals.isEmpty()) {
+                        String clause = dimension.getValue() + " IN ['" + String.join("', '", vals) + "']";
+                        andJoiner.add(clause);
+                    }
+                }
+            }
+            if (andJoiner.length() > 2) {
+                orParts.add(andJoiner.toString());
+            }
+        }
+        if(!orParts.isEmpty()) cypher.append("AND (").append(String.join(" OR ", orParts)).append(")");
+        cypher.append(" THEN o END) AS provenance \n");
     }
     private String getAggregationFilters(List<Filter> filters, AggregationType aggregationType) {
         List<String> conditions = new ArrayList<>();

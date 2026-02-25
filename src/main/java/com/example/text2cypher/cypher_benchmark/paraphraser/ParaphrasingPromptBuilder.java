@@ -75,6 +75,8 @@ public class ParaphrasingPromptBuilder {
     - Use phrases like “prioritized based on”.
     - Maintain defined ranking rule.
     - Priority order should imply multiple answers with respective ordering clauses.
+    - The output question must explicitly request all return fields defined in the protoNL
+    
     Example 1 : In November 2025, which police zone showed the weakest performance in terms of both raw recovery cases and severity-adjusted recovery, indicating not only fewer recoveries but also lower impact in curbing serious crimes?
     Example 2 : In 2024, which police zone experienced relatively fewer total crimes yet a higher average crime severity, pointing to a concerning trend where less frequent but more serious offenses dominated its crime profile?
     

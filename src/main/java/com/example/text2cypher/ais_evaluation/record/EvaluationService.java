@@ -15,10 +15,11 @@ public class EvaluationService {
     }
 
     public void create(String modelName, AIS ais, String question, GoldEntry gold, CQP predictedCQP, String predictedCypher, OlapCypherResponse result,
-                       Long predicted, Long correct, Boolean executed, Boolean provenanceMatched){
+                       Long predicted, Long correct, Boolean executed, Boolean provenanceMatched, Boolean resultMatch) {
         EvaluationRecord evaluationRecord = new EvaluationRecord();
         evaluationRecord.setModelName(modelName);
         evaluationRecord.setGoldEntry(gold);
+        evaluationRecord.setResultMatch(resultMatch);
         evaluationRecord.setQuestion(question);
         evaluationRecord.setPredictedAis(LocalMapper.write(ais));
         evaluationRecord.setPredictedCQP(LocalMapper.write(predictedCQP));

@@ -50,9 +50,12 @@ public class SemanticFilterNormalizer {
             finalMonthCodes = intersect(finalMonthCodes, convertYear(dimensionValues.get(Dimension.MONTH_YEAR)));
         }
         dimensionValues.clear();
-        dimensionValues.put(Dimension.EVENT_SUBTYPE, finalSubTypes);
-        dimensionValues.put(Dimension.ZONE_NAME, finalZoneNames);
-        dimensionValues.put(Dimension.MONTH_CODE, finalMonthCodes);
+        if(finalSubTypes.isEmpty())dimensionValues.put(Dimension.EVENT_SUBTYPE, ExactMatchAccuracy.allEventSubTypes());
+        else dimensionValues.put(Dimension.EVENT_SUBTYPE, finalSubTypes);
+        if(finalZoneNames.isEmpty()) dimensionValues.put(Dimension.ZONE_NAME, ExactMatchAccuracy.allZoneNames());
+        else dimensionValues.put(Dimension.ZONE_NAME, finalZoneNames);
+        if(finalMonthCodes.isEmpty()) dimensionValues.put(Dimension.MONTH_CODE, ExactMatchAccuracy.allMonthCodes());
+        else dimensionValues.put(Dimension.MONTH_CODE, finalMonthCodes);
         return dimensionValues;
     }
     private Set<String>   createDistinctSet(Filter filter) {
@@ -73,7 +76,7 @@ public class SemanticFilterNormalizer {
                 return getValidSet(value, op, 12, 1);
             }
             else if(dimension.equals(Dimension.EVENT_SUBTYPE_SEVERITY)){
-                return getValidSet(value, op, 5, 1);
+                return getValidSet(value, op, 5, 0);
             }
             else if(dimension.equals(Dimension.MONTH_CODE)){
                 return getValidMonthCodes(value, op);

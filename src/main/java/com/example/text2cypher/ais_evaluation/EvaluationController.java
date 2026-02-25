@@ -26,10 +26,4 @@ public class EvaluationController {
     public ResponseEntity<?> evaluateSingleAIS(@RequestBody AIS ais, @PathVariable("goldId") Long goldId){
         return new ResponseEntity<>(evaluationScheduler.checkAis(ais, goldId), HttpStatus.OK);
     }
-    @PostMapping("/retain")
-    public ResponseEntity<?> retain(@RequestBody Set<String> set){
-        Set<String> retainedSet = Set.of("crime", "murder");
-        set.retainAll(retainedSet);
-        return new ResponseEntity<>(set, HttpStatus.OK);
-    }
 }

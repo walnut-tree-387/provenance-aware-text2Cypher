@@ -5,6 +5,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Data
 @AllArgsConstructor
@@ -14,7 +16,7 @@ public class CQP {
     private List<Filter> filters;
     private List<GroupKey> groupBy;
     private List<Measure> measures;
-    private List<Filter> provenanceFilters;
+    private Map<Long, List<Map<Dimension, Set<String>>>> provenanceFilters;
     private List<PostAggregation> postAggregations;
     private List<OrderSpec> orderClauses;
     private Integer limit;

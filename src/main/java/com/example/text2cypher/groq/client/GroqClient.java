@@ -3,46 +3,64 @@ package com.example.text2cypher.groq.client;
 import com.example.text2cypher.groq.dto.GroqChatRequest;
 import com.example.text2cypher.groq.dto.GroqChatResponse;
 import com.example.text2cypher.groq.dto.GroqMessage;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
 public class GroqClient {
-    private final Random random = new Random();
-
     private final WebClient webClient;
+    private final List<String> apiKeys;
+    private final AtomicInteger keyIndex = new AtomicInteger(0);
 
-    public GroqClient(WebClient groqWebClient) {
+    public GroqClient(WebClient groqWebClient, List<String> groqApiKeys) {
         this.webClient = groqWebClient;
+        this.apiKeys = groqApiKeys;
     }
 
     public GroqChatResponse chatCompletion(double temperature, String prompt, String model) {
-        GroqChatRequest request = GroqChatRequest.builder()
+        int maxRetries = apiKeys.size();
+        for (int attempt = 0; attempt < maxRetries; attempt++) {
+            String currentKey = getActiveKey();
+            try {
+                return webClient.post()
+                        .uri("/chat/completions")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + currentKey)
+                        .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .bodyValue(buildRequest(temperature, prompt, model))
+                        .retrieve()
+                        .bodyToMono(GroqChatResponse.class)
+                        .block();
+            } catch (Exception e) {
+                System.err.println("Key " + (keyIndex.get() % apiKeys.size()) + " failed. Rotating...");
+                rotateKey();
+            }
+        }
+        return null;
+    }
+
+    private String getActiveKey() {
+        return apiKeys.get(Math.abs(keyIndex.get() % apiKeys.size()));
+    }
+
+    private void rotateKey() {
+        keyIndex.incrementAndGet();
+    }
+
+    private GroqChatRequest buildRequest(double temp, String prompt, String model) {
+        return GroqChatRequest.builder()
                 .model(model)
-                .messages(List.of(
-                        new GroqMessage("user", prompt)
-                ))
-                .temperature(temperature)
+                .messages(List.of(new GroqMessage("user", prompt)))
+                .temperature(temp)
                 .top_p(1.0f)
                 .max_completion_tokens(8192L)
                 .stream(false)
                 .build();
-
-        try {
-            return webClient.post()
-                    .uri("/chat/completions")
-                    .bodyValue(request)
-                    .retrieve()
-                    .bodyToMono(GroqChatResponse.class)
-                    .block();
-        } catch (Exception e) {
-            System.err.println("Groq API call failed: " + e.getMessage() +
-                    " for request: " + request + " with model: " + model + " and prompt: " + prompt);
-            return null;
-        }
-
     }
 }
+

@@ -53,7 +53,7 @@ public class BenchmarkProducer {
         String goldCypher = cypherBuilder.build(goldCqp);
         OlapCypherResponse goldResponse = OlapCypherResponseMapper.map(neo4jService.fetch(goldCypher), goldCqp.getReturnClauses());
         paraphraseList.keySet().forEach(modelName ->
-                goldEntryService.create(modelName, protoNL, goldCypher, LocalMapper.write(goldResponse.nodeList()),
+                goldEntryService.create(requestDto.getQueryType(), modelName, protoNL, goldCypher, LocalMapper.write(goldResponse.nodeList()),
                         LocalMapper.write(goldResponse.results()), LocalMapper.write(goldCqp), paraphraseList.get(modelName)));
         return paraphraseList;
     }

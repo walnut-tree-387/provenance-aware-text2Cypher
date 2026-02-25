@@ -7,6 +7,7 @@ import com.example.text2cypher.ais_evaluation.ais.derived_intent.AISDerivedInten
 import com.example.text2cypher.ais_evaluation.ais.fact.AISFact;
 import com.example.text2cypher.ais_evaluation.ais.intent.AISIntent;
 import com.example.text2cypher.ais_evaluation.ais.order.AISOrderIntent;
+import com.example.text2cypher.ais_evaluation.utils.filter_utils.SemanticFilterNormalizer;
 import com.example.text2cypher.cypher_utils.cqp.*;
 import org.springframework.stereotype.Component;
 
@@ -15,17 +16,18 @@ import java.util.stream.Collectors;
 @Component
 public class AIStoCQPCompiler {
     private final CompilerContext compilerContext;
-    private final  Map<Dimension, Set<Object>> convertedGlobalContext = new HashMap<>();
-    public AIStoCQPCompiler(CompilerContext compilerContext) {
+    private final Map<Measure, Map<Dimension, Set<String>>> effectiveFiltersByMeasure = new HashMap<>();
+    private final List<Filter> globalFilters = new ArrayList<>();
+    private final SemanticFilterNormalizer filterNormalizer;
+    public AIStoCQPCompiler(CompilerContext compilerContext, SemanticFilterNormalizer filterNormalizer) {
         this.compilerContext = compilerContext;
+        this.filterNormalizer = filterNormalizer;
     }
     public CQP mapToCQP(AIS ais) {
         if (ais == null) return null;
         CQP cqp = new CQP(
                 compileFact(ais.getFact()),
-                ais.getContext().stream()
-                        .map(this::compileFilter)
-                        .collect(Collectors.toList()),
+                compileFilters(ais.getContext()),
                 ais.getAxes().stream()
                         .map(this::mapGroupKey)
                         .collect(Collectors.toList()),
@@ -47,14 +49,33 @@ public class AIStoCQPCompiler {
         compilerContext.clearContext();
         return cqp;
     }
-    private List<Filter> setProvenanceFilters(){
-        List<Filter> provenanceFilters = new ArrayList<>();
-        for(Dimension key : convertedGlobalContext.keySet()) {
-            Filter filter = new Filter(key, Operator.IN, convertedGlobalContext.get(key));
-            provenanceFilters.add(filter);
+    private List<Filter> compileFilters(List<AISContext> contexts){
+        List<Filter> filters = contexts.stream()
+                .map(this::compileFilter)
+                .toList();
+        globalFilters.addAll(filters);
+        return filters;
+    }
+    private Map<Long, List<Map<Dimension, Set<String>>>> setProvenanceFilters(){
+        Map<Dimension, Set<String>> normalizedGlobalFilters = filterNormalizer.normalize(globalFilters);
+        Map<Long, List<Map<Dimension, Set<String>>>> provenanceFilters = new HashMap<>();
+        Long idx = 0L;
+        for(Measure m: effectiveFiltersByMeasure.keySet()){
+            Map<Dimension, Set<String>> normalizedEffectiveFilters = effectiveFiltersByMeasure.get(m);
+            List<Map<Dimension, Set<String>>> clauseList = new ArrayList<>();
+            for(Dimension dimension : normalizedGlobalFilters.keySet()){
+                Map<Dimension, Set<String>> clause = new HashMap<>();
+                if(!Objects.equals(normalizedGlobalFilters.get(dimension), normalizedEffectiveFilters.get(dimension))){
+                    clause.put(dimension, normalizedEffectiveFilters.get(dimension));
+                }
+                else clause.put(dimension, new HashSet<>());
+                clauseList.add(clause);
+            }
+            provenanceFilters.put(idx, clauseList);
+            idx++;
         }
-        convertedGlobalContext.clear();
-        provenanceFilters.add(new Filter(Dimension.OBSERVATION_COUNT, Operator.GT, 0));
+        effectiveFiltersByMeasure.clear();
+        globalFilters.clear();
         return provenanceFilters;
     }
 
@@ -83,7 +104,7 @@ public class AIStoCQPCompiler {
                 .toList();
         Measure measure = new Measure(type, alias, filterList);
         compilerContext.registerMeasure(alias, measure);
-        extractGlobalInContext(filterList);
+        storeNormalizedEffectiveFilters(measure);
         return measure;
     }
     private PostAggregation mapPostAggregation(AISDerivedIntent d) {
@@ -130,23 +151,11 @@ public class AIStoCQPCompiler {
                 .filter(compilerContext :: hasAny)
                 .toList();
     }
-    private void extractGlobalInContext(List<Filter> filters) {
-        if(filters == null) return;
-        for (Filter filter : filters) {
-            Dimension dimension = filter.getDimension();
-            Operator operator = filter.getOperator();
-            Object value = filter.getValue();
-            if (operator == Operator.EQ) {
-                convertedGlobalContext
-                        .computeIfAbsent(dimension, d -> new HashSet<>())
-                        .add(value);
-            }
-            else if (operator == Operator.IN) {
-                convertedGlobalContext
-                        .computeIfAbsent(dimension, d -> new HashSet<>())
-                        .addAll((List<?>) value);
-            }
-        }
+    private void storeNormalizedEffectiveFilters(Measure measure) {
+        List<Filter> mergedFilters = new ArrayList<>(globalFilters);
+        mergedFilters.addAll(measure.getFilters());
+        Map<Dimension, Set<String>> normalized = filterNormalizer.normalize(mergedFilters);
+        effectiveFiltersByMeasure.put(measure, normalized);
     }
 
 }

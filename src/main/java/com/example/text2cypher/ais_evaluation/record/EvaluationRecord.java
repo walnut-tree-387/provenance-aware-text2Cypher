@@ -29,8 +29,9 @@ public class EvaluationRecord {
 
     private Long predictedAttributes;
     private Long correctAttributes;
-    private boolean executed = false;
-    private boolean provenanceMatched = false;
+    private Boolean executed = false;
+    private Boolean resultMatch = false;
+    private Boolean provenanceMatched = false;
 
     private String modelName;
 }

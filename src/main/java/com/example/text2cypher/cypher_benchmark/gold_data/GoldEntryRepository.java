@@ -5,9 +5,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 public interface GoldEntryRepository extends JpaRepository<GoldEntry, Long> {
-    @Query(" SELECT ge from GoldEntry ge WHERE ge.processed = false ")
-    List<GoldEntry> findByProcessed();
+    Optional<GoldEntry> findFirstByProcessedFalseOrderByIdAsc();
 }

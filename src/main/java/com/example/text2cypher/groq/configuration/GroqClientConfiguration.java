@@ -10,30 +10,32 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 
 import java.time.Duration;
+import java.util.List;
 
 @Configuration
 public class GroqClientConfiguration {
     @Value("${groq.api.url}")
     private String baseUrl;
 
-    @Value("${groq.api.key}")
-    private String apiKey;
+    @Value("${groq.api.key1}") private String k1;
+    @Value("${groq.api.key2}") private String k2;
+    @Value("${groq.api.key3}") private String k3;
 
     @Value("${groq.api.timeout}")
     private int timeoutMs;
 
     @Bean
+    public List<String> groqApiKeys() {
+        return List.of(k1, k2, k3);
+    }
+
+    @Bean
     public WebClient groqWebClient() {
         return WebClient.builder()
                 .baseUrl(baseUrl)
-                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
-                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .clientConnector(
-                        new ReactorClientHttpConnector(
-                                HttpClient.create()
-                                        .responseTimeout(Duration.ofMillis(timeoutMs))
-                        )
-                )
+                .clientConnector(new ReactorClientHttpConnector(
+                        HttpClient.create().responseTimeout(Duration.ofMillis(timeoutMs))))
                 .build();
     }
 }
+

@@ -1,5 +1,6 @@
 package com.example.text2cypher.cypher_benchmark.factories;
 
+import com.example.text2cypher.ais_evaluation.utils.filter_utils.SemanticFilterNormalizer;
 import com.example.text2cypher.cypher_utils.cqp.*;
 import com.example.text2cypher.cypher_benchmark.dto.OlapQueryDto;
 import com.example.text2cypher.cypher_benchmark.dto.PostAggregationDto;
@@ -9,7 +10,14 @@ import java.util.*;
 
 @Component
 public class OlapCqpFactory {
-    private final Map<Dimension, Set<Object>> convertedGlobalContext = new HashMap<>();
+    private final Map<Measure, Map<Dimension, Set<String>>> effectiveFiltersByMeasure = new HashMap<>();
+    private final List<Filter> globalFilters = new ArrayList<>();
+    private final SemanticFilterNormalizer filterNormalizer;
+
+    public OlapCqpFactory(SemanticFilterNormalizer filterNormalizer) {
+        this.filterNormalizer = filterNormalizer;
+    }
+
     public CQP fromDto(OlapQueryDto dto) {
         return new CQP(
                 Fact.OBSERVATION_COUNT,
@@ -24,17 +32,30 @@ public class OlapCqpFactory {
                 compileProjection(dto)
         );
     }
-    private List<Filter> compileProvenanceFilters(){
-        List<Filter> provenanceFilters = new ArrayList<>();
-        for(Dimension key : convertedGlobalContext.keySet()) {
-            Filter filter = new Filter(key, Operator.IN, convertedGlobalContext.get(key));
-            provenanceFilters.add(filter);
+    private Map<Long, List<Map<Dimension, Set<String>>>> compileProvenanceFilters(){
+        Map<Dimension, Set<String>> normalizedGlobalFilters = filterNormalizer.normalize(globalFilters);
+        Map<Long, List<Map<Dimension, Set<String>>>> provenanceFilters = new HashMap<>();
+        Long idx = 0L;
+        for(Measure m: effectiveFiltersByMeasure.keySet()){
+            Map<Dimension, Set<String>> normalizedEffectiveFilters = effectiveFiltersByMeasure.get(m);
+            List<Map<Dimension, Set<String>>> clauseList = new ArrayList<>();
+            for(Dimension dimension : normalizedGlobalFilters.keySet()){
+                Map<Dimension, Set<String>> clause = new HashMap<>();
+                if(!Objects.equals(normalizedGlobalFilters.get(dimension), normalizedEffectiveFilters.get(dimension))){
+                    clause.put(dimension, normalizedEffectiveFilters.get(dimension));
+                }
+                else clause.put(dimension, new HashSet<>());
+                clauseList.add(clause);
+            }
+            provenanceFilters.put(idx, clauseList);
+            idx++;
         }
-        convertedGlobalContext.clear();
-        provenanceFilters.add(new Filter(Dimension.OBSERVATION_COUNT, Operator.GT, 0));
+        effectiveFiltersByMeasure.clear();
+        globalFilters.clear();
         return provenanceFilters;
     }
     private List<Filter> compileFilters(OlapQueryDto dto) {
+        globalFilters.addAll(dto.getFilters());
         return (dto.getFilters() == null) ? List.of() : dto.getFilters();
     }
     private List<GroupKey> compileGroupBy(OlapQueryDto dto) {
@@ -49,7 +70,7 @@ public class OlapCqpFactory {
                                 m.getFilters()
                         )
                 )
-                .peek(m -> extractGlobalInContext(m.getFilters()))
+                .peek(this::storeNormalizedEffectiveFilters)
                 .toList();
     }
     private List<OrderSpec> compileOrder(OlapQueryDto dto) {
@@ -87,23 +108,11 @@ public class OlapCqpFactory {
             );
         };
     }
-    private void extractGlobalInContext(List<Filter> filters) {
-        if(filters == null) return;
-        for (Filter filter : filters) {
-            Dimension dimension = filter.getDimension();
-            Operator operator = filter.getOperator();
-            Object value = filter.getValue();
-            if (operator == Operator.EQ) {
-                convertedGlobalContext
-                        .computeIfAbsent(dimension, d -> new HashSet<>())
-                        .add(value);
-            }
-            else if (operator == Operator.IN) {
-                convertedGlobalContext
-                        .computeIfAbsent(dimension, d -> new HashSet<>())
-                        .addAll((List<?>) value);
-            }
-        }
+    private void storeNormalizedEffectiveFilters(Measure measure) {
+        List<Filter> mergedFilters = new ArrayList<>(globalFilters);
+        mergedFilters.addAll(measure.getFilters());
+        Map<Dimension, Set<String>> normalized = filterNormalizer.normalize(mergedFilters);
+        effectiveFiltersByMeasure.put(measure, normalized);
     }
 }
 

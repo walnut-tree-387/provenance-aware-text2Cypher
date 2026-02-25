@@ -55,7 +55,7 @@ public class AISGenerator {
         for(String model: models){
             GroqChatResponse response = groqClient.chatCompletion(0.0f, prompt, model);
             cycle++;
-            if(response == null)continue;
+            if(response == null) throw new RuntimeException("Response came null for " + model + " while generating AIS");
             String rawText = response.getChoices()
                     .getFirst()
                     .getMessage()

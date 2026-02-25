@@ -1,5 +1,6 @@
 package com.example.text2cypher.cypher_benchmark.gold_data;
 
+import com.example.text2cypher.cypher_benchmark.dto.QueryType;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -24,5 +25,7 @@ public class GoldEntry {
     private String protoNL;
     @Column(columnDefinition = "TEXT")
     private String modelName;
-    private boolean processed = false;
+    @Enumerated(EnumType.STRING)
+    private QueryType queryType;
+    private Boolean processed = false;
 }
