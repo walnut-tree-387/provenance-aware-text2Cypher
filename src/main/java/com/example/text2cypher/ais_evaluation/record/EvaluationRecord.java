@@ -1,5 +1,6 @@
 package com.example.text2cypher.ais_evaluation.record;
 
+import com.example.text2cypher.cypher_benchmark.dto.QueryType;
 import com.example.text2cypher.cypher_benchmark.gold_data.GoldEntry;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -26,6 +27,9 @@ public class EvaluationRecord {
     private String predictedResult;
     @Column(columnDefinition = "TEXT")
     private String predictedProvenance;
+
+    @Enumerated(EnumType.STRING)
+    private QueryType queryType;
 
     private Long predictedAttributes;
     private Long correctAttributes;

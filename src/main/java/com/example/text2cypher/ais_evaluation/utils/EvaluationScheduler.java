@@ -13,6 +13,7 @@ import com.example.text2cypher.cypher_utils.cypher.OlapCypherResponseMapper;
 import com.example.text2cypher.neo4j.Neo4jService;
 import com.example.text2cypher.utils.LocalMapper;
 import com.example.text2cypher.utils.SleeperCoach;
+import jakarta.transaction.Transactional;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -41,7 +42,8 @@ public class EvaluationScheduler {
         this.aisGenerator = aisGenerator;
         this.cypherBuilder = cypherBuilder;
     }
-//    @Scheduled(fixedDelay = 2 * 60 * 1000)
+    @Transactional(rollbackOn =  EvaluationRollbackException.class)
+    @Scheduled(fixedDelay = 60 * 1000)
     public void process(){
         Optional<GoldEntry> goldEntryOp = goldEntryRepository.findFirstByProcessedFalseOrderByIdAsc();
         if(goldEntryOp.isPresent()){
@@ -51,31 +53,30 @@ public class EvaluationScheduler {
             try{
                 aisList = aisGenerator.generateAIS(goldEntry.getQuestion());
             } catch(Exception e){
-                throw new RuntimeException(e);
+                throw new EvaluationRollbackException("AIS generation failed");
             }
-            if(aisList.size() == 4){
-                for(String key:  aisList.keySet()){
-                    AIS ais = aisList.get(key);
-                    CQP testCQP = cqpCompiler.mapToCQP(ais);
-                    Long predictedScore = ExactMatchAccuracy.getPredictedScore(testCQP);
-                    Long correctScore = ExactMatchAccuracy.getCorrectScore(goldCQP, testCQP);
-                    String testCypher = cypherBuilder.build(testCQP);
-                    OlapCypherResponse testResponse = null;
-                    try{
-                        testResponse = OlapCypherResponseMapper.map(neo4jService.fetch(testCypher), testCQP.getReturnClauses());
-                        boolean provenanceMatched = checkProvenance(testResponse, goldEntry.getGoldProvenance());
-                        boolean resultMatch = checkResult(testResponse, goldEntry.getGoldResult());
-                        evaluationService.create(key, ais, goldEntry.getQuestion(), goldEntry, testCQP, testCypher,
-                                testResponse, predictedScore, correctScore, true, provenanceMatched, resultMatch);
-                    }catch (Exception e){
-                        evaluationService.create(key, ais, goldEntry.getQuestion(), goldEntry, testCQP, testCypher,
-                                null, predictedScore, correctScore, false, false, false);
-                    }
-                    goldEntry.setProcessed(true);
-                    goldEntryRepository.save(goldEntry);
+            if(aisList.size() != 4) throw new EvaluationRollbackException("Expected 4 Ais per gold entries but got " + aisList.size());
+            for(String key:  aisList.keySet()){
+                AIS ais = aisList.get(key);
+                CQP testCQP = cqpCompiler.mapToCQP(ais);
+                Long predictedScore = ExactMatchAccuracy.getPredictedScore(testCQP);
+                Long correctScore = ExactMatchAccuracy.getCorrectScore(goldCQP, testCQP);
+                String testCypher = cypherBuilder.build(testCQP);
+                OlapCypherResponse testResponse = null;
+                try{
+                    testResponse = OlapCypherResponseMapper.map(neo4jService.fetch(testCypher), testCQP.getReturnClauses());
+                    boolean provenanceMatched = checkProvenance(testResponse, goldEntry.getGoldProvenance());
+                    boolean resultMatch = checkResult(testResponse, goldEntry.getGoldResult());
+                    evaluationService.create(key, ais, goldEntry.getQuestion(), goldEntry, testCQP, testCypher,
+                            testResponse, predictedScore, correctScore, true, provenanceMatched, resultMatch);
+                }catch (Exception e){
+                    evaluationService.create(key, ais, goldEntry.getQuestion(), goldEntry, testCQP, testCypher,
+                            null, predictedScore, correctScore, false, false, false);
                 }
-                System.out.println("Gold entry processed. id --> " + goldEntry.getId());
             }
+            System.out.println("Gold entry processed. id --> " + goldEntry.getId());
+            goldEntry.setProcessed(true);
+            goldEntryRepository.save(goldEntry);
         }
     }
     public Map<String, Map<AIS, List<Object>> > evaluateGoldEntry(Long id){
