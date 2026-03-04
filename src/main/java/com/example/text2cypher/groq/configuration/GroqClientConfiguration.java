@@ -29,7 +29,7 @@ public class GroqClientConfiguration {
 
     @Bean
     public List<String> groqApiKeys() {
-        return List.of(k1, k2, k3, k4, k5, k6);
+        return List.of(k1, k6, k4, k3, k2, k5);
     }
 
     @Bean

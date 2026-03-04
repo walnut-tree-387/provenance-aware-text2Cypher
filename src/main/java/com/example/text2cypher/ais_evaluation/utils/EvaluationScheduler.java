@@ -51,7 +51,7 @@ public class EvaluationScheduler {
             CQP goldCQP = LocalMapper.read(goldEntry.getGoldCqp(), CQP.class);
             Map<String, AIS> aisList;
             try{
-                aisList = aisGenerator.generateAIS(goldEntry.getQuestion());
+                aisList = aisGenerator.generateAIS(goldEntry);
             } catch(Exception e){
                 throw new EvaluationRollbackException("AIS generation failed");
             }
@@ -82,7 +82,7 @@ public class EvaluationScheduler {
     public Map<String, Map<AIS, List<Object>> > evaluateGoldEntry(Long id){
         GoldEntry goldEntry = goldEntryService.findById(id);
         CQP goldCQP = LocalMapper.read(goldEntry.getGoldCqp(), CQP.class);
-        Map<String, AIS> aisList = aisGenerator.generateAIS(goldEntry.getQuestion());
+        Map<String, AIS> aisList = aisGenerator.generateAIS(goldEntry);
         Map<String, Map<AIS, List<Object>> > result = new HashMap<>();
         for(String key:  aisList.keySet()) {
             AIS ais = aisList.get(key);
