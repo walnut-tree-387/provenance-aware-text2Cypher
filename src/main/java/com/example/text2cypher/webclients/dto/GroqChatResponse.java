@@ -1,4 +1,4 @@
-package com.example.text2cypher.groq.dto;
+package com.example.text2cypher.webclients.dto;
 
 import lombok.Data;
 

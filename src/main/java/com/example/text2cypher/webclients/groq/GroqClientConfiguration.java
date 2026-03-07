@@ -1,10 +1,8 @@
-package com.example.text2cypher.groq.configuration;
+package com.example.text2cypher.webclients.groq;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
@@ -23,13 +21,14 @@ public class GroqClientConfiguration {
     @Value("${groq.api.key4}") private String k4;
     @Value("${groq.api.key5}") private String k5;
     @Value("${groq.api.key6}") private String k6;
+    @Value("${groq.api.key7}") private String k7;
 
     @Value("${groq.api.timeout}")
     private int timeoutMs;
 
     @Bean
     public List<String> groqApiKeys() {
-        return List.of(k1, k6, k4, k3, k2, k5);
+        return List.of(k1, k6, k4, k3, k2, k5, k7);
     }
 
     @Bean

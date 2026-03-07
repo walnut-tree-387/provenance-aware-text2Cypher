@@ -1,15 +1,14 @@
-package com.example.text2cypher.groq.client;
+package com.example.text2cypher.webclients.groq;
 
-import com.example.text2cypher.groq.dto.GroqChatRequest;
-import com.example.text2cypher.groq.dto.GroqChatResponse;
-import com.example.text2cypher.groq.dto.GroqMessage;
+import com.example.text2cypher.webclients.dto.ChatRequest;
+import com.example.text2cypher.webclients.dto.ClientMessage;
+import com.example.text2cypher.webclients.dto.GroqChatResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
@@ -52,10 +51,10 @@ public class GroqClient {
         keyIndex.incrementAndGet();
     }
 
-    private GroqChatRequest buildRequest(double temp, String prompt, String model) {
-        return GroqChatRequest.builder()
+    private ChatRequest buildRequest(double temp, String prompt, String model) {
+        return ChatRequest.builder()
                 .model(model)
-                .messages(List.of(new GroqMessage("user", prompt)))
+                .messages(List.of(new ClientMessage("user", prompt)))
                 .temperature(temp)
                 .top_p(1.0f)
                 .max_completion_tokens(8192L)

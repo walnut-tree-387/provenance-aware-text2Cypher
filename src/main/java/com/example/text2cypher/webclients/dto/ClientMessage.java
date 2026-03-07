@@ -1,11 +1,11 @@
-package com.example.text2cypher.groq.dto;
+package com.example.text2cypher.webclients.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class GroqMessage {
+public class ClientMessage {
     private String role;
     private String content;
 }

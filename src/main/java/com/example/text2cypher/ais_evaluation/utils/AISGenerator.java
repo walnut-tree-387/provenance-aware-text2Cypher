@@ -1,8 +1,9 @@
 package com.example.text2cypher.ais_evaluation.utils;
 import com.example.text2cypher.ais_evaluation.ais.AIS;
 import com.example.text2cypher.cypher_benchmark.gold_data.GoldEntry;
-import com.example.text2cypher.groq.client.GroqClient;
-import com.example.text2cypher.groq.dto.GroqChatResponse;
+import com.example.text2cypher.webclients.dto.GroqChatResponse;
+import com.example.text2cypher.webclients.dto.OllamaChatResponse;
+import com.example.text2cypher.webclients.groq.GroqClient;
 import com.example.text2cypher.cypher_benchmark.paraphraser.ParaphraseNormalizer;
 import com.example.text2cypher.utils.SleeperCoach;
 import org.springframework.stereotype.Component;

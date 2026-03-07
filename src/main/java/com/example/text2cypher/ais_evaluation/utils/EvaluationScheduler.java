@@ -3,6 +3,7 @@ package com.example.text2cypher.ais_evaluation.utils;
 import com.example.text2cypher.ais_evaluation.ais.AIS;
 import com.example.text2cypher.ais_evaluation.compiler.AIStoCQPCompiler;
 import com.example.text2cypher.ais_evaluation.record.EvaluationService;
+import com.example.text2cypher.cypher_benchmark.dto.QueryType;
 import com.example.text2cypher.cypher_benchmark.gold_data.GoldEntry;
 import com.example.text2cypher.cypher_benchmark.gold_data.GoldEntryRepository;
 import com.example.text2cypher.cypher_benchmark.gold_data.GoldEntryService;
@@ -45,9 +46,8 @@ public class EvaluationScheduler {
     @Transactional(rollbackOn =  EvaluationRollbackException.class)
     @Scheduled(fixedDelay = 60 * 1000)
     public void process(){
-        Optional<GoldEntry> goldEntryOp = goldEntryRepository.findFirstByProcessedFalseOrderByIdAsc();
-        if(goldEntryOp.isPresent()){
-            GoldEntry goldEntry = goldEntryOp.get();
+        GoldEntry goldEntry = goldEntryService.findRandomlySelectedGoldEntry(QueryType.RATIO);
+        if(goldEntry != null){
             CQP goldCQP = LocalMapper.read(goldEntry.getGoldCqp(), CQP.class);
             Map<String, AIS> aisList;
             try{

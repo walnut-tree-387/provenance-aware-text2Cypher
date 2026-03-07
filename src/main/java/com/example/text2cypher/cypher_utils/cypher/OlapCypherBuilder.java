@@ -10,6 +10,7 @@ import java.util.stream.Stream;
 @Component
 public class OlapCypherBuilder {
     public String build(CQP cqp) {
+        if(cqp == null) return "empty cypher for a rotten cqp";
         StringBuilder cypher = new StringBuilder("MATCH (o:Observation)\n");
         matchClause(cypher);
         whereClause(cqp.getFilters(), cypher);

@@ -1,7 +1,11 @@
 package com.example.text2cypher.cypher_benchmark.gold_data;
 
 import com.example.text2cypher.cypher_benchmark.dto.QueryType;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class GoldEntryService {
@@ -25,5 +29,16 @@ public class GoldEntryService {
         goldEntry.setGoldProvenance(goldProvenance);
         goldEntry.setQuestion(nlQuestion);
         goldEntryRepository.save(goldEntry);
+    }
+    public long findTotalProcessedTrue(QueryType queryType) {
+        return goldEntryRepository.countByQueryTypeAndProcessedTrue(queryType);
+    }
+    public GoldEntry findRandomlySelectedGoldEntry(QueryType queryType) {
+        long totalProcessedTrue = findTotalProcessedTrue(queryType);
+        if(totalProcessedTrue >= 400) throw new RuntimeException("We already evaluated 400 entry for this query type");
+        List<GoldEntry> list =
+                goldEntryRepository.findRandomUnprocessedByQueryType(queryType, PageRequest.of(0,1));
+        Optional<GoldEntry> entry = list.stream().findFirst();
+        return entry.orElse(null);
     }
 }
