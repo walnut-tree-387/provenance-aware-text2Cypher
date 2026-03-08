@@ -44,7 +44,7 @@ public class EvaluationScheduler {
         this.cypherBuilder = cypherBuilder;
     }
     @Transactional(rollbackOn =  EvaluationRollbackException.class)
-    @Scheduled(fixedDelay = 60 * 1000)
+    @Scheduled(fixedDelay = 20 * 1000)
     public void process(){
         GoldEntry goldEntry = goldEntryService.findRandomlySelectedGoldEntry(QueryType.RATIO);
         if(goldEntry != null){

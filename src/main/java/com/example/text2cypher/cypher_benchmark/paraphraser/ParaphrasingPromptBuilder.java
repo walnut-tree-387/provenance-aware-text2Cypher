@@ -67,7 +67,11 @@ public class ParaphrasingPromptBuilder {
     - The output must be answerable with Yes/No.
     - Phrase as a factual condition check.
     - Preserve aggregated condition exactly.
-    Example : In Q2 2025, Did DMP reported any crime with maximum severity level?
+    Examples :
+    - In Q2 2025, Did DMP reported any crime with maximum severity level?
+    - In February 2022, was the total severity score of arms‑act recoveries reported by the Sylhet police zone less than 2?
+    - In March 2022, did Sylhet Range reported a total severity score for arms-act recoveries that was below 2?
+    - In the first half of 2021, what was the average severity for dacoity crimes in Dmp zone? Was the calculated average severity score greater than 3?
     
     If Query Type = PRIORITY_ORDER:
     - Orders Intents must be mentioned in the output question for PRIORITY_ORDER query type, or else output will be penalized.
@@ -86,7 +90,18 @@ public class ParaphrasingPromptBuilder {
     - Average severity MUST ONLY be used when explicitly defined as a ratio between WEIGHTED_SUM and COUNT_SUM.
     - If only WEIGHTED_SUM appears, it MUST be expressed as "total severity" or "total severity score".
     - NEVER interpret WEIGHTED_SUM alone as average severity.
-
+    SEVERITY INTERPRETATION RULES(CRITICAL):
+    1. "severity level" refers to the severity value of a single observation/event.
+    2. "total severity score" refers to the SUM of severity across all matching observations.
+    3. "average severity score" refers to the AVG of severity across all matching observations.
+    4. If a question asks whether a total/average severity score meets a condition.
+     (e.g., ≥, ≤, >, <), you MUST:
+       - first compute the aggregate
+       - then apply the comparison as a post-aggregation condition.
+    5. Do NOT interpret phrases like:
+       - "any crime with total severity ≥ X"
+       - as a filter on individual observations.
+    6. When the phrase contains: "total severity" OR "average severity" OR "maximum severity across" it ALWAYS refers to an aggregate metric, not event-level filtering.
     
     Strict Global Rules to follow for writing question:
     - Your output must be a single question and nothing but the question. DO NOT add model reasoning in output OR else output will be counted as wrong answer.

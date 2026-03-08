@@ -67,7 +67,7 @@ public class AISGenerator {
                     .getContent();
             AIS ais = answerNormalizer.normalizeAIS(rawText);
             modelMap.put(model, ais);
-            if(cycle <= 3)SleeperCoach.sleepMinutes(25000);
+            if(cycle <= 3)SleeperCoach.sleepMinutes(20000);
         }
         if(modelMap.size() == 4)aisMap.remove(goldEntry.getId());
         return modelMap;
