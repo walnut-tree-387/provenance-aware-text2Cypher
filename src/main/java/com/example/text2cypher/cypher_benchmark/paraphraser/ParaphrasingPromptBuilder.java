@@ -90,6 +90,17 @@ public class ParaphrasingPromptBuilder {
     - Average severity MUST ONLY be used when explicitly defined as a ratio between WEIGHTED_SUM and COUNT_SUM.
     - If only WEIGHTED_SUM appears, it MUST be expressed as "total severity" or "total severity score".
     - NEVER interpret WEIGHTED_SUM alone as average severity.
+    
+    ROW SELECTION RULES (LIMIT & SKIP) :
+    - LIMIT N means return the top N rows from the ordered result set.
+    - SKIP K means ignore the first K rows from the ordered result set and select the next N - K result.
+    - SKIP IS ALWAYS APPLIED WITH LIMIT AND SKIP MUST BE LESS THAN THE LIMIT.
+    Example:
+    - LIMIT 2 SKIP 0 → top two row.
+    - LIMIT 3 SKIP 1 → return the second and third row.
+    - LIMIT 3 SKIP 2 → return the third row.
+    - LIMIT 5 SKIP 3 → return the 4th and 5th row.
+    
     SEVERITY INTERPRETATION RULES(CRITICAL):
     1. "severity level" refers to the severity value of a single observation/event.
     2. "total severity score" refers to the SUM of severity across all matching observations.
