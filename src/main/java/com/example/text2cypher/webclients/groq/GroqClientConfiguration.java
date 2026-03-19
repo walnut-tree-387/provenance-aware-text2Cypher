@@ -17,19 +17,19 @@ public class GroqClientConfiguration {
 
     @Value("${groq.api.key1}") private String k1;
     @Value("${groq.api.key2}") private String k2;
-    @Value("${groq.api.key3}") private String k3;
-    @Value("${groq.api.key4}") private String k4;
-    @Value("${groq.api.key5}") private String k5;
-    @Value("${groq.api.key6}") private String k6;
-    @Value("${groq.api.key7}") private String k7;
-    @Value("${groq.api.key8}") private String k8;
+//    @Value("${groq.api.key3}") private String k3;
+//    @Value("${groq.api.key4}") private String k4;
+//    @Value("${groq.api.key5}") private String k5;
+//    @Value("${groq.api.key6}") private String k6;
+//    @Value("${groq.api.key7}") private String k7;
+//    @Value("${groq.api.key8}") private String k8;
 
     @Value("${groq.api.timeout}")
     private int timeoutMs;
 
     @Bean
     public List<String> groqApiKeys() {
-        return List.of(k1, k6, k4, k3, k2, k5, k7, k8);
+        return List.of(k1, k2);
     }
 
     @Bean

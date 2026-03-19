@@ -3,6 +3,8 @@ import com.example.text2cypher.ais_evaluation.ais.AIS;
 import com.example.text2cypher.utils.LocalMapper;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class AISNormalizer {
     public AIS normalizeAIS(String llmOutput) {
@@ -10,6 +12,13 @@ public class AISNormalizer {
         String json = extractJson(cleaned);
         try{
             return LocalMapper.read(json, AIS.class);
+        }catch(Exception e){
+            return null;
+        }
+    }
+    public List<AIS> normalizeAISList(String llmOutput) {
+        try{
+            return LocalMapper.readList(llmOutput, AIS.class);
         }catch(Exception e){
             return null;
         }

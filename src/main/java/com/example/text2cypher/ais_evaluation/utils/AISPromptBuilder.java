@@ -2,8 +2,42 @@ package com.example.text2cypher.ais_evaluation.utils;
 
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 public final class AISPromptBuilder {
+    public String buildAISPromptBatch(List<String> questions){
+        return """
+        You are an expert in understanding analytical questions over a Crime Knowledge Graph and converting them into Structured AIS Objects in JSON format.
+        %s
+        %s
+
+        Task:
+        Convert the following natural language questions into AIS objects.
+
+        Constraints:
+        - Do NOT generate Cypher.
+        - Do NOT include explanations or comments.
+        - Do NOT invent Nodes, properties, or relationships.
+        - Use ONLY concepts present in the provided graph schema.
+        - AIS must reflect the exact analytical intent of each question.
+        - Generate exactly one AIS object per question.
+        - Output MUST be a valid JSON array containing the AIS objects and nothing else.
+        - The order of AIS objects MUST match the order of the input questions.
+        - Do NOT wrap the output in markdown fences.
+
+        Natural Language Questions:
+        %s
+
+        Output:
+        """.formatted(
+                getGraphSchemaForAIS(),
+                aisWritingRules(),
+                questions.stream()
+                        .map(q -> "- \"" + q + "\"")
+                        .collect(java.util.stream.Collectors.joining("\n"))
+        );
+    }
     public String buildAISPrompt(String question) {
         return """
             You are an expert in understanding analytical questions over a Crime Knowledge Graph and converting them into a Structured AIS Object in JSON Format.

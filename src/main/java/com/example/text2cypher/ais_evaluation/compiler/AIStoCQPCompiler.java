@@ -28,20 +28,11 @@ public class AIStoCQPCompiler {
         CQP cqp = new CQP(
                 compileFact(ais.getFact()),
                 compileFilters(ais.getContext()),
-                ais.getAxes().stream()
-                        .map(this::mapGroupKey)
-                        .collect(Collectors.toList()),
-                ais.getIntents().stream()
-                        .map(this::mapMeasure)
-                        .collect(Collectors.toList()),
+                compileAxes(ais.getAxes()),
+                compileIntents(ais.getIntents()),
                 setProvenanceFilters(),
-                ais.getDerivedIntents().stream()
-                        .map(this::mapPostAggregation)
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toList()),
-                ais.getOrderIntents().stream()
-                        .map(this::compileOrder)
-                        .collect(Collectors.toList()),
+                compileDerivedIntents(ais.getDerivedIntents()),
+                compileOrderIntents(ais.getOrderIntents()),
                 ais.getLimit(),
                 ais.getOffset(),
                 compileProjections(ais.getProjection())
@@ -49,7 +40,33 @@ public class AIStoCQPCompiler {
         compilerContext.clearContext();
         return cqp;
     }
+    public List<OrderSpec> compileOrderIntents(List<AISOrderIntent> aisOrderIntents) {
+        if (aisOrderIntents == null || aisOrderIntents.isEmpty()) return List.of();
+        return aisOrderIntents.stream()
+                .map(this::compileOrder)
+                .collect(Collectors.toList());
+    }
+    public List<PostAggregation> compileDerivedIntents(List<AISDerivedIntent> aisDerivedIntents) {
+        if (aisDerivedIntents == null || aisDerivedIntents.isEmpty()) return List.of();
+        return aisDerivedIntents.stream()
+                .map(this::mapPostAggregation)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+    public List<Measure> compileIntents(List<AISIntent> aisIntents) {
+        if(aisIntents == null || aisIntents.isEmpty()) return List.of();
+        return aisIntents.stream()
+                .map(this::mapMeasure)
+                .collect(Collectors.toList());
+    }
+    public List<GroupKey> compileAxes(List<AISAxis> axes) {
+        if(axes == null || axes.isEmpty()) return List.of();
+        return axes.stream()
+                .map(this::mapGroupKey)
+                .collect(Collectors.toList());
+    }
     private List<Filter> compileFilters(List<AISContext> contexts){
+        if(contexts == null || contexts.isEmpty()) return List.of();
         List<Filter> filters = contexts.stream()
                 .map(this::compileFilter)
                 .toList();

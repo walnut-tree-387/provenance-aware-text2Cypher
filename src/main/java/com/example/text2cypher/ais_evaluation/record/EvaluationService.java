@@ -1,11 +1,13 @@
 package com.example.text2cypher.ais_evaluation.record;
 
 import com.example.text2cypher.ais_evaluation.ais.AIS;
+import com.example.text2cypher.ais_evaluation.utils.EvaluationScheduler;
 import com.example.text2cypher.cypher_benchmark.dto.QueryType;
 import com.example.text2cypher.cypher_benchmark.gold_data.GoldEntry;
 import com.example.text2cypher.cypher_utils.cqp.CQP;
 import com.example.text2cypher.cypher_utils.cypher.OlapCypherResponse;
 import com.example.text2cypher.utils.LocalMapper;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -24,7 +26,7 @@ public class EvaluationService implements IEvaluationService {
     public void create(String modelName, AIS ais, String question, GoldEntry gold, CQP predictedCQP, String predictedCypher, OlapCypherResponse result,
                        Long predicted, Long correct, Boolean executed, Boolean provenanceMatched, Boolean resultMatch) {
         EvaluationRecord evaluationRecord = new EvaluationRecord();
-        evaluationRecord.setModelName(modelName);
+        evaluationRecord.setModelName(getModelName(modelName));
         evaluationRecord.setGoldEntry(gold);
         evaluationRecord.setResultMatch(resultMatch);
         evaluationRecord.setQuestion(question);
@@ -40,5 +42,32 @@ public class EvaluationService implements IEvaluationService {
         evaluationRecord.setPredictedAttributes(predicted);
         evaluationRecord.setCorrectAttributes(correct);
         evaluationRecordRepository.save(evaluationRecord);
+
     }
+    public void update(EvaluationRecord evaluationRecord, AIS ais, CQP predictedCQP, String predictedCypher, OlapCypherResponse result,
+                       Long predicted, Long correct, Boolean executed, Boolean provenanceMatched, Boolean resultMatch) {
+        evaluationRecord.setResultMatch(resultMatch);
+        evaluationRecord.setPredictedAis(LocalMapper.write(ais));
+        evaluationRecord.setPredictedCQP(LocalMapper.write(predictedCQP));
+        evaluationRecord.setPredictedCypher(predictedCypher);
+        if(result != null)evaluationRecord.setPredictedResult(LocalMapper.write(result.results()));
+        if(result != null)evaluationRecord.setPredictedProvenance(LocalMapper.write(result.nodeList()));
+
+        evaluationRecord.setExecuted(executed);
+        evaluationRecord.setProvenanceMatched(provenanceMatched);
+        evaluationRecord.setPredictedAttributes(predicted);
+        evaluationRecord.setCorrectAttributes(correct);
+        evaluationRecordRepository.save(evaluationRecord);
+
+    }
+    public String getModelName(String modelName) {
+        if(modelName.equals("gpt-oss:120b-cloud")) return "openai/gpt-oss-120b";
+        else if (modelName.equals("kimi-k2:1t-cloud")) return "moonshotai/kimi-k2-instruct-0905";
+        else return modelName;
+    }
+
+    public List<EvaluationRecord> getNullPredictedAIS(String modelName) {
+        return evaluationRecordRepository.findAllByNullPredictedAis(modelName, PageRequest.of(0,5));
+    }
+
 }

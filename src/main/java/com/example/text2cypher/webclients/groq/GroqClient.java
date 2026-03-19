@@ -8,6 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -52,14 +53,19 @@ public class GroqClient {
     }
 
     private ChatRequest buildRequest(double temp, String prompt, String model) {
-        return ChatRequest.builder()
+        ChatRequest request = ChatRequest.builder()
                 .model(model)
                 .messages(List.of(new ClientMessage("user", prompt)))
                 .temperature(temp)
                 .top_p(1.0f)
                 .max_completion_tokens(8192L)
                 .stream(false)
+                .extraParams(new HashMap<>())
                 .build();
+        if (model.equals("qwen/qwen3-32b")) {
+            request.addExtraParam("include_reasoning", false);
+        }
+        return request;
     }
 }
 

@@ -1,10 +1,11 @@
 package com.example.text2cypher.graph_generation.csv_parser;
 
+import com.example.text2cypher.graph_generation.dto.FineTuneData;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,5 +31,24 @@ public class CsvParserImpl implements CsvParser {
             throw new RuntimeException(e.getMessage());
         }
         return rows;
+    }
+     public void createFineTuneCsv(List<FineTuneData> data) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter("train.csv", StandardCharsets.UTF_8))) {
+            writer.write("Id,Type,Question,Answer");
+            writer.newLine();
+            int manualId = 1;
+            for (FineTuneData row : data) {
+                String line = String.format("%d,%s,\"%s\",\"%s\"",
+                        manualId++,
+                        row.getQueryType(),
+                        row.getNl().replace("\"", "\"\""),
+                        row.getCqp().replace("\"", "\"\""));
+                writer.write(line);
+                writer.newLine();
+            }
+            System.out.println("File saved successfully to project root: train.csv" );
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to save CSV file: " + e.getMessage());
+        }
     }
 }
