@@ -2,6 +2,7 @@ package com.example.text2cypher.utils;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public final class LocalMapper {
@@ -44,6 +45,31 @@ public final class LocalMapper {
                     e
             );
         }
+    }
+    public static <T> List<T> readListOneByOne(JsonNode json, Class<T> elementType) {
+        List<T> result = new ArrayList<>();
+        try {
+            JsonNode root = convertToJsonNode(json);
+            if (!root.isArray()) {
+                throw new IllegalArgumentException("Expected JSON array");
+            }
+            for (JsonNode node : root) {
+                try {
+                    T obj = objectMapper.treeToValue(node, elementType);
+                    result.add(obj);
+                } catch (Exception e) {
+                    try {
+                        result.add(elementType.getDeclaredConstructor().newInstance());
+                    } catch (Exception reflectionError) {
+                        System.out.println("Skipping invalid AIS node: " + node);
+                    }
+                }
+            }
+
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to parse JSON array", e);
+        }
+        return result;
     }
     public static JsonNode convertToJsonNode(Object value) {
         try {

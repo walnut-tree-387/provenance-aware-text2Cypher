@@ -16,11 +16,27 @@ public class AISNormalizer {
             return null;
         }
     }
-    public List<AIS> normalizeAISList(String llmOutput) {
-        try{
-            return LocalMapper.readList(llmOutput, AIS.class);
-        }catch(Exception e){
-            return null;
+    public List<AIS> normalizeAISList(String llmOutput, String modelName) {
+        String cleaned = preprocess(llmOutput);
+        String json = extractJson(cleaned);
+        json = repairJson(json);
+        System.out.println("Model: " + modelName + "\n Json Produced : " + json + "\n");
+        try {
+            return LocalMapper.readList(json, AIS.class);
+        } catch (Exception e) {
+            return List.of(); // never return null
+        }
+    }
+    ///  TODO NEED TO RETURN CYPHER STRING LIST FROM THIS METHOD
+    public List<String> normalizeCypher(String llmOutput) {
+        String cleaned = preprocess(llmOutput);
+        String json = extractJson(cleaned);
+        json = repairJson(json);
+        try {
+            return LocalMapper.readList(json, String.class);
+        } catch (Exception e) {
+            System.out.println("FAILED JSON:\n" + json);
+            return List.of();
         }
     }
     private String preprocess(String raw) {
@@ -32,18 +48,33 @@ public class AISNormalizer {
         s = s.replaceAll("(?m)^```\\s*$", "");
         return s.trim();
     }
+    private String repairJson(String json) {
+        json = json.replaceAll("}\\s*\\{", "},{");
+        json = json.replaceAll(",\\s*([}\\]])", "$1");
+        int openBraces = json.length() - json.replace("{", "").length();
+        int closeBraces = json.length() - json.replace("}", "").length();
+        StringBuilder jsonBuilder = new StringBuilder(json);
+        while (closeBraces < openBraces) {
+            jsonBuilder.append("}");
+            closeBraces++;
+        }
+        json = jsonBuilder.toString();
+        return json;
+    }
     private String extractJson(String text) {
-        System.out.println(text);
-        if (text.startsWith("[") && text.contains("{")) {
-            int objStart = text.indexOf("{");
-            int objEnd = text.lastIndexOf("}");
+        text = text.trim();
+        // Handle array
+        int arrStart = text.indexOf("[");
+        int arrEnd = text.lastIndexOf("]");
+        if (arrStart >= 0 && arrEnd > arrStart) {
+            return text.substring(arrStart, arrEnd + 1);
+        }
+        // Handle single object
+        int objStart = text.indexOf("{");
+        int objEnd = text.lastIndexOf("}");
+        if (objStart >= 0 && objEnd > objStart) {
             return text.substring(objStart, objEnd + 1);
         }
-        int start = text.indexOf("{");
-        int end = text.lastIndexOf("}");
-        if (start >= 0 && end > start) {
-            return text.substring(start, end + 1);
-        }
-        throw new IllegalStateException("No JSON object found");
+        throw new IllegalStateException("No JSON found");
     }
 }

@@ -39,7 +39,7 @@ public class EnumCompiler {
             case LTE -> Operator.LTE;
             case IN -> Operator.IN;
             case NOT_IN -> Operator.NOT_IN;
-
+            case BETWEEN -> Operator.IN;
             default -> throw new RuntimeException(
                     "Unsupported AISOperator: " + aisOperator
             );

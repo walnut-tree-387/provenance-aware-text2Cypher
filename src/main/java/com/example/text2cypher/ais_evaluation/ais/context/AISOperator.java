@@ -7,5 +7,6 @@ public enum AISOperator {
     LTE,
     LT,
     IN,
-    NOT_IN
+    NOT_IN,
+    BETWEEN,
 }

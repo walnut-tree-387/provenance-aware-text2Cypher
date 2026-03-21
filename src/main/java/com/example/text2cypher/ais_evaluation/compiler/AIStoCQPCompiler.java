@@ -3,6 +3,7 @@ package com.example.text2cypher.ais_evaluation.compiler;
 import com.example.text2cypher.ais_evaluation.ais.AIS;
 import com.example.text2cypher.ais_evaluation.ais.axes.AISAxis;
 import com.example.text2cypher.ais_evaluation.ais.context.AISContext;
+import com.example.text2cypher.ais_evaluation.ais.context.AISOperator;
 import com.example.text2cypher.ais_evaluation.ais.derived_intent.AISDerivedIntent;
 import com.example.text2cypher.ais_evaluation.ais.fact.AISFact;
 import com.example.text2cypher.ais_evaluation.ais.intent.AISIntent;
@@ -163,6 +164,7 @@ public class AIStoCQPCompiler {
         return null;
     }
     private List<String> compileProjections(List<String> projections) {
+        if(projections == null || projections.isEmpty()) return List.of();
         return projections.stream()
                 .map(this::normalizeAlias)
                 .filter(compilerContext :: hasAny)

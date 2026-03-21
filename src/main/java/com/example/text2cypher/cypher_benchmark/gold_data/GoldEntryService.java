@@ -43,7 +43,7 @@ public class GoldEntryService {
     }
     public List<GoldEntry> findRandomlySelectedGoldEntryList(QueryType queryType) {
         long totalProcessedTrue = findTotalProcessedTrue(queryType);
-        if(totalProcessedTrue >= 400) throw new RuntimeException("We already evaluated 400 entry for this query type");
-        return goldEntryRepository.findRandomUnprocessedByQueryType(queryType, PageRequest.of(0,5));
+        if(totalProcessedTrue >= 600) throw new RuntimeException("We already evaluated 200 entry for this query type");
+        return goldEntryRepository.findRandomUnprocessedByQueryType(queryType, PageRequest.of(0,10));
     }
 }

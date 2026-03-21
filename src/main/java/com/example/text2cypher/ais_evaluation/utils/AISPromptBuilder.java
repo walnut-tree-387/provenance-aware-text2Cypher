@@ -24,7 +24,7 @@ public final class AISPromptBuilder {
         - Generate exactly one AIS object per question.
         - Output MUST be a valid JSON array containing the AIS objects and nothing else.
         - The order of AIS objects MUST match the order of the input questions.
-        - Do NOT wrap the output in markdown fences.
+        - Do NOT wrap the output in markdown fences, json tag or anything else. Output MUST be a list of AIS object only.
 
         Natural Language Questions:
         %s
@@ -234,6 +234,13 @@ public final class AISPromptBuilder {
         3. If the question asks about "impact", "severity weighted", or "overall seriousness" → use SEVERITY_WEIGHTED_COUNT.
         4. If the question asks for average severity, TOTAL_COUNT AND SEVERITY_WEIGHTED_COUNT is a must have in intent List.
         5. Use localContext ONLY if an intent applies to a different slice than others.
+        8. INTENT UNIQUENESS RULE (CRITICAL):
+        - DO NOT generate multiple intents that have the SAME:
+          - type AND
+          - localContext
+        - If two intents differ ONLY by name (alias) but have identical type and localContext,
+          they are considered DUPLICATES and MUST be merged into a SINGLE intent.
+        - Different names alone DO NOT justify separate intents.
         6. Aggregation differences (TOTAL_COUNT vs SEVERITY_WEIGHTED_COUNT) NEVER justify localContext. localContext is driven ONLY by filtering differences, not aggregation semantics.
         """;
     }
@@ -242,7 +249,7 @@ public final class AISPromptBuilder {
         2. CONTEXT
         Each AISContext must have the following properties:
         - dimension: Possible values - MONTH, MONTH_YEAR, MONTH_QUARTER, MONTH_CODE, ZONE_NAME, ZONE_DIVISION, EVENT_TYPE, EVENT_SUBTYPE, EVENT_SUBTYPE_SEVERITY
-        - operator: Possible values - EQ, IN, GT, LT, GTE, LTE, NOT_IN
+        - operator: Possible values - EQ, IN, GT, LT, GTE, LTE, NOT_IN(DO NOT USE ANY OTHER OPERATOR Or else AIS object mapping will get failed)
         - value: you MUST extract from the question. Possible data types - integer, string, or list depending on operator
         
         CONTEXT TYPES : There are 2 types of Context.
@@ -286,6 +293,7 @@ public final class AISPromptBuilder {
         12. For ranges of months, quarters, or other numeric values, use operator IN with [all possible values].
         13. Do NOT invent or add extra CONTEXT not present in the question.
         13. Output must be a **JSON array** of objects, where each object represents one AISContext with dimension, operator, and value.
+        14. DO NOT use BETWEEN As Operator
         Examples:
         - "January 2024"
          → Option 1: [{ dimension: MONTH, operator: EQ, value: 1}, {dimension: MONTH_YEAR, operator: EQ, value: 2024}]
@@ -516,25 +524,27 @@ public final class AISPromptBuilder {
         10. CORRECTLY SPELL THE NODE LEVEL AND NODE PROPERTIES WHILE WRITING THE CYPHER. ALSO CYPHER NEED TO BE ENSURED HAVE THE 'MUST HAVE' PARTS.
         """;
     }
-    public String buildPrompt(String question) {
+    public String buildPrompt(List<String> questions) {
         return """
-    You are an expert in generating Neo4j Cypher queries from natural english language questions.
+    You are an expert understanding analytical questions and generating Neo4j Cypher queries from those natural english language questions into a Json list.
     %s
     %s
-    Task: Convert the following natural English question about the mention crime knowledge graph that a real user might ask.
+    Task: Convert the following natural language questions into neo4j cypher executable queries.
     Constraints:
     - Do not Include INVALID CYPHER keywords. If needed use search tools to ensure about cypher keyword validity.
     - Try to extract the exact meaning and intent of the question and generate constraints accordingly.
     - Do NOT add, remove, or change any constraints.
     - Do NOT introduce new nodes, relations, or properties
-    - The output MUST be a single valid Cypher query in plain text.
+    - The output MUST be a json list of valid Cypher queries.
     - DO NOT use markdown, code blocks, backticks, or language tags (e.g., ```cypher).
-    - Output ONLY the Cypher query string and nothing else.
-
-    Natural Language Question:
+    - The order of Cypher query strings MUST match the order of the input questions.
+     - Generate exactly one cypher query per question.
+    Natural Language Questions:
     "%s"
 
     Output:
-    """.formatted(previousSchema(), cypherWritingRules(), question);
+    """.formatted(previousSchema(), cypherWritingRules(), questions.stream()
+                .map(q -> "- \"" + q + "\"")
+                .collect(java.util.stream.Collectors.joining("\n")));
     }
 }
