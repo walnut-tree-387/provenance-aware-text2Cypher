@@ -1,11 +1,14 @@
 package com.example.text2cypher.ais_evaluation.record;
 
 import com.example.text2cypher.ais_evaluation.ais.AIS;
+import com.example.text2cypher.cypher_benchmark.dto.QueryType;
 import com.example.text2cypher.cypher_benchmark.gold_data.GoldEntry;
 import com.example.text2cypher.cypher_utils.cqp.CQP;
 import com.example.text2cypher.cypher_utils.cypher.OlapCypherResponse;
 import com.example.text2cypher.utils.LocalMapper;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class CypherService {
@@ -13,6 +16,9 @@ public class CypherService {
 
     public CypherService(CypherRecordRepository cypherRecordRepository) {
         this.cypherRecordRepository = cypherRecordRepository;
+    }
+    public List<CypherRecord> findAllByQueryType(QueryType queryType) {
+        return cypherRecordRepository.findAllByQueryType(queryType);
     }
     public void create(String modelName, String question, GoldEntry gold, String predictedCypher, OlapCypherResponse result,
                       Boolean executed, Boolean provenanceMatched, Boolean resultMatch) {

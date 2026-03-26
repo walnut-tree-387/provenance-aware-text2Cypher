@@ -13,6 +13,12 @@ public class ProvenanceChecker {
         if (goldProvenanceList.size() != predicted.nodeList().size()) return false;
         return provenanceSetMatch(goldProvenanceList, predicted.nodeList());
     }
+    public static boolean checkProvenanceForLLMGeneratedCypher(OlapCypherResponse predicted, String goldProvenance) {
+        List<ProvenanceRecord> goldProvenanceList = LocalMapper.readList(goldProvenance, ProvenanceRecord.class);
+        goldProvenanceList.removeIf(provenanceRecord -> provenanceRecord.count() <= 0); // Remove provenance nodes with zero count
+        if (goldProvenanceList.size() != predicted.nodeList().size()) return false;
+        return provenanceSetMatch(goldProvenanceList, predicted.nodeList());
+    }
     public static boolean checkResult(OlapCypherResponse predicted, String goldResult){
         List<List<Map<String, Object>>> goldResults = LocalMapper.read(goldResult, List.class);
         return resultsMatch(goldResults, predicted.results());
@@ -81,7 +87,5 @@ public class ProvenanceChecker {
         }
         return valA.equals(valB);
     }
-
-
 }
 

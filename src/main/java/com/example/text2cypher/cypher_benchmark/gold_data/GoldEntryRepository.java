@@ -25,6 +25,12 @@ public interface GoldEntryRepository extends JpaRepository<GoldEntry, Long> {
             Pageable pageable
     );
     long countByQueryTypeAndProcessedTrue(QueryType queryType);
-    List<GoldEntry> findTop700ByQueryTypeOrderByIdAsc(QueryType queryType);
+    @Query("""
+        SELECT g
+        FROM GoldEntry g
+        WHERE g.queryType = :queryType
+        ORDER BY function('RANDOM')
+    """)
+    List<GoldEntry> findRandom200GoldEntry(QueryType queryType, Pageable pageable);
 
 }

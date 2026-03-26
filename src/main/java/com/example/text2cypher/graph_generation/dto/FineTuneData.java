@@ -6,7 +6,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class FineTuneData {
-    private String cqp;
+    private String answer;
     private String queryType;
     private String nl;
 }

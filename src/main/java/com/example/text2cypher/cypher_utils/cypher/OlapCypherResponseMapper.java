@@ -39,4 +39,34 @@ public final class OlapCypherResponseMapper {
                 results, (long) nodeList.size(), nodeList
         );
     }
+    public static OlapCypherResponse mapCypherResponse(List<Record> records){
+        List<List<Map<String, Object>>> results = new ArrayList<>();
+        Map<String, ProvenanceRecord> provenanceMap = new LinkedHashMap<>();
+        for (Record record : records) {
+            Map<String, Object> row = new LinkedHashMap<>();
+            for (String key : record.keys()) {
+                if(!key.equals("provenance")){
+                    Object value = record.get(key).asObject();
+                    row.put(key, value);
+                }
+            }
+            results.add(List.of(row));
+            if (record.containsKey("provenance")) {
+                record.get("provenance").asList(Value::asNode)
+                        .forEach(n -> provenanceMap.putIfAbsent(
+                                n.get("id").asString(),
+                                new ProvenanceRecord(
+                                        n.get("count").asLong(),
+                                        n.get("id").asString(),
+                                        n.get("source").asString()
+                                )
+                        ));
+            }
+        }
+        List<ProvenanceRecord> nodeList =
+                new ArrayList<>(provenanceMap.values());
+        return new OlapCypherResponse(
+                results, (long) nodeList.size(), nodeList
+        );
+    }
 }

@@ -9,7 +9,10 @@ import com.example.text2cypher.cypher_benchmark.dto.QueryType;
 import com.example.text2cypher.cypher_benchmark.gold_data.GoldEntry;
 import com.example.text2cypher.cypher_benchmark.gold_data.GoldEntryRepository;
 import com.example.text2cypher.cypher_benchmark.gold_data.GoldEntryService;
+import com.example.text2cypher.cypher_utils.cqp.AggregationType;
 import com.example.text2cypher.cypher_utils.cqp.CQP;
+import com.example.text2cypher.cypher_utils.cqp.Filter;
+import com.example.text2cypher.cypher_utils.cqp.Measure;
 import com.example.text2cypher.cypher_utils.cypher.OlapCypherBuilder;
 import com.example.text2cypher.cypher_utils.cypher.OlapCypherResponse;
 import com.example.text2cypher.cypher_utils.cypher.OlapCypherResponseMapper;
@@ -18,13 +21,15 @@ import com.example.text2cypher.graph_generation.dto.FineTuneData;
 import com.example.text2cypher.neo4j.Neo4jService;
 import com.example.text2cypher.utils.LocalMapper;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
 
-import static com.example.text2cypher.ais_evaluation.utils.ProvenanceChecker.checkProvenance;
-import static com.example.text2cypher.ais_evaluation.utils.ProvenanceChecker.checkResult;
+import static com.example.text2cypher.ais_evaluation.utils.ProvenanceChecker.*;
 
 @Component
 public class EvaluationScheduler {
@@ -193,14 +198,37 @@ public class EvaluationScheduler {
     public void generateFineTuneData(){
         List<FineTuneData> answers = new ArrayList<>();
         for(QueryType queryType:QueryType.values()){
-            List<GoldEntry> entries = goldEntryRepository.findTop700ByQueryTypeOrderByIdAsc(queryType);
-            entries.forEach(entry -> {
-                answers.add(new FineTuneData(
-                        entry.getGoldCqp(),
-                        entry.getQueryType().toString(),
-                        entry.getQuestion()
-                ));
-            });
+            Sort sort = Sort.by(Sort.Direction.ASC, "id");
+            Pageable pageable = PageRequest.of(0, 100, sort);
+            List<GoldEntry> entries = goldEntryRepository.findRandom200GoldEntry(queryType, pageable);
+            for(GoldEntry entry:entries){
+                if(entry.getQueryType().equals(QueryType.COUNT) || entry.getQueryType().equals(QueryType.AGGREGATION)){
+                    CQP cqp = LocalMapper.read(entry.getGoldCqp(), CQP.class);
+                    List<Map<String, Object>> condos;
+                    List<Map<String, Object>> measures;
+                    condos = convertFilters(cqp.getFilters());
+                    measures = new ArrayList<>();
+                    for(Measure measure: cqp.getMeasures()){
+                        String type = measure.getAggregationType().toString().toLowerCase();
+                        String alias = measure.getAlias();
+                        List<Map<String, Object>> filters = convertFilters(measure.getFilters());
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("type", type);map.put("alias", alias);map.put("filters", filters);
+                        measures.add(map);
+                    }
+                    List<String> proj = new ArrayList<>(cqp.getReturnClauses());
+                    Map<String, Object> total = new HashMap<>();
+                    total.put("filters", condos);
+                    total.put("measures", measures);
+                    total.put("projections", proj);
+                    String ans = LocalMapper.write(total);
+                    answers.add(new FineTuneData(
+                            ans,
+                            entry.getQueryType().toString(),
+                            entry.getQuestion()
+                    ));
+                }
+            }
         }
         csvParser.createFineTuneCsv(answers);
     }
@@ -232,9 +260,10 @@ public class EvaluationScheduler {
         }
     }
 
-    @Scheduled(fixedDelay = 20 * 1000)
+    @Transactional(rollbackOn =  EvaluationRollbackException.class)
+//    @Scheduled(fixedDelay = 20 * 1000)
     public void processCypherBatch(){
-        List<GoldEntry> goldEntries = goldEntryService.findRandomlySelectedGoldEntryList(QueryType.PRIORITY_ORDER);
+        List<GoldEntry> goldEntries = goldEntryService.findRandomlySelectedGoldEntryList(QueryType.COUNT);
         Map<String, List<String>> cypherMap;
         try{
             cypherMap = cypherGenerator.generateCypherBatch(goldEntries);
@@ -248,11 +277,11 @@ public class EvaluationScheduler {
                 String testCypher = null;
                 if(cypherMap.get(key) != null)cypherList = cypherMap.get(key);
                 if (cypherList != null && !cypherList.isEmpty() && i < cypherList.size()) testCypher = cypherList.get(i);
-                List<String> returnClauses = List.of(); // Find the return clauses from cypher string
+                if(testCypher == null) throw new EvaluationRollbackException("Found null predicted cypher for " + key);
                 OlapCypherResponse testResponse;
                 try{
-                    testResponse = OlapCypherResponseMapper.map(neo4jService.fetch(testCypher), returnClauses);
-                    boolean provenanceMatched = checkProvenance(testResponse, goldEntry.getGoldProvenance());
+                    testResponse = OlapCypherResponseMapper.mapCypherResponse(neo4jService.fetch(testCypher));
+                    boolean provenanceMatched = checkProvenanceForLLMGeneratedCypher(testResponse, goldEntry.getGoldProvenance());
                     boolean resultMatch = checkResult(testResponse, goldEntry.getGoldResult());
                     cypherService.create(key, goldEntry.getQuestion(), goldEntry, testCypher,
                             testResponse, true, provenanceMatched, resultMatch);
@@ -265,5 +294,17 @@ public class EvaluationScheduler {
             goldEntry.setProcessed(true);
             goldEntryRepository.save(goldEntry);
         }
+    }
+    public List<Map<String, Object>> convertFilters(List<Filter> filters){
+        List<Map<String, Object>> condos = new ArrayList<>();
+        for(Filter filter: filters){
+            String dim = filter.getDimension().toString().toLowerCase();
+            String op = filter.getOperator().getValue();
+            String value = filter.getValue().toString();
+            Map<String, Object> map = new HashMap<>();
+            map.put("dim", dim);map.put("op", op);map.put("value", value);
+            condos.add(map);
+        }
+        return condos;
     }
 }

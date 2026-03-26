@@ -42,7 +42,7 @@ public class CsvParserImpl implements CsvParser {
                         manualId++,
                         row.getQueryType(),
                         row.getNl().replace("\"", "\"\""),
-                        row.getCqp().replace("\"", "\"\""));
+                        row.getAnswer().replace("\"", "\"\""));
                 writer.write(line);
                 writer.newLine();
             }

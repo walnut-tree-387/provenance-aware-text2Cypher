@@ -500,7 +500,7 @@ public final class AISPromptBuilder {
            - Each Constraint you build will have two portion
                 1. Property signature. For example(z.name, m.code, et.name, est.name, est.severity etc.)
                 2. Value. For Example("dmp", '2024-01', "crime", "dacoity", 1, 2024, etc) Replace Month name like January with 1, accurately value from(1-12), for string value use syntactically matched same name.
-                3. ADD all the constraints Using 'AND' Keyword. Don't use any other keyword to merge the constraints.
+                3. ADD all the constraints Using 'AND' Keyword. Don't use any   other keyword to merge the constraints.
         3. CREATE PROJECTIONS VARIABLES WITH ALIAS(MUST HAVE) : This is a must have step. Don't ignore this step. In this step you will identify what are the resultant variables user have asked for. Depending on the answer type need for the query you will define grouping and aggregate clause with alias to use later part of the query. Use following style -
            - The WITH clause MUST:
              - Contain all grouping keys explicitly
