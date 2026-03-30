@@ -13,7 +13,7 @@ public class EventSubType {
         this.severity = SEVERITY_MAP.getOrDefault(this.name, 0L);
     }
 
-    private static final Map<String, Long> SEVERITY_MAP = Map.ofEntries(
+    public static final Map<String, Long> SEVERITY_MAP = Map.ofEntries(
             // Extreme / lethal
             Map.entry("murder", 5L),
 

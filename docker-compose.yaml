@@ -1,0 +1,17 @@
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: cypher-db
+    restart: always
+    environment:
+      POSTGRES_USER: cypher
+      POSTGRES_PASSWORD: cypher
+      POSTGRES_DB: cypher
+    volumes:
+      - db-data:/var/lib/postgresql
+    ports:
+      - "5433:5432"
+
+volumes:
+  db-data:
