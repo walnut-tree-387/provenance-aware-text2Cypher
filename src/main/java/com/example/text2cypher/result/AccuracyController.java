@@ -21,16 +21,21 @@ public class AccuracyController {
     }
 
     @GetMapping("/ais")
-    public ResponseEntity<?> getAisAccuracy(@RequestParam QueryType queryType) {
-        return new ResponseEntity<>(accuracyCalculator.calculateAisAccuracy(queryType), HttpStatus.OK);
+    public ResponseEntity<?> getAisAccuracy() {
+        return new ResponseEntity<>(accuracyCalculator.calculateMeanAisPrediction(), HttpStatus.OK);
     }
     @GetMapping("/cypher")
     public ResponseEntity<?> getCypherAccuracy(@RequestParam QueryType queryType) {
-        evaluationScheduler.generateFineTuneData();
+//        evaluationScheduler.generateFineTuneData();
         return new ResponseEntity<>(accuracyCalculator.calculateCypherAccuracy(queryType), HttpStatus.OK);
+    }
+    @GetMapping("/few-shot/cypher")
+    public ResponseEntity<?> getFewShotCypherAccuracy(@RequestParam QueryType queryType) {
+//        evaluationScheduler.generateFineTuneData();
+        return new ResponseEntity<>(accuracyCalculator.calculateFewShotCypherAccuracy(queryType), HttpStatus.OK);
     }
     @GetMapping("/compare-accuracy")
     public ResponseEntity<?> compareAccuracy() {
-        return new ResponseEntity<>(accuracyCalculator.compareAccuracy(), HttpStatus.OK);
+        return new ResponseEntity<>(accuracyCalculator.summarizeAccuracy(), HttpStatus.OK);
     }
 }

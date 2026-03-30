@@ -44,4 +44,23 @@ public class CypherGenerator {
         }
         return modelMap;
     }
+    public Map<String, List<String>> generateCypherFewShotBatch(List<GoldEntry> goldEntries) {
+        List<String> questions = goldEntries.stream().map(GoldEntry::getQuestion).toList();
+        String prompt = promptBuilder.buildFewShotPrompt(questions);
+        List<String> ollamaModels = List.of("gpt-oss:120b-cloud",  "kimi-k2:1t-cloud");
+        Map<String, List<String>> modelMap = new HashMap<>();
+        long cycle = 0;
+        for(String model: ollamaModels){
+            OllamaChatResponse response = localClient.chatCompletion(0.0f , prompt, model);
+            cycle++;
+            if(response == null) throw new RuntimeException("Response came null for " + model + " while generating AIS");
+            String rawText = response
+                    .getMessage()
+                    .getContent();
+            List<String> cyphers = answerNormalizer.normalizeCypher(rawText);
+            modelMap.put(model, cyphers);
+            if(cycle <= 1) SleeperCoach.sleepMinutes(20000);
+        }
+        return modelMap;
+    }
 }

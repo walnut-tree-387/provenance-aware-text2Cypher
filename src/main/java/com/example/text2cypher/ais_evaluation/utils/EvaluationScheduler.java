@@ -5,6 +5,7 @@ import com.example.text2cypher.ais_evaluation.compiler.AIStoCQPCompiler;
 import com.example.text2cypher.ais_evaluation.record.CypherService;
 import com.example.text2cypher.ais_evaluation.record.EvaluationRecord;
 import com.example.text2cypher.ais_evaluation.record.EvaluationService;
+import com.example.text2cypher.ais_evaluation.record.FewShotCypherService;
 import com.example.text2cypher.cypher_benchmark.dto.QueryType;
 import com.example.text2cypher.cypher_benchmark.gold_data.GoldEntry;
 import com.example.text2cypher.cypher_benchmark.gold_data.GoldEntryRepository;
@@ -43,8 +44,9 @@ public class EvaluationScheduler {
     private final CsvParserImpl csvParser;
     private final CypherGenerator cypherGenerator;
     private final CypherService cypherService;
+    private final FewShotCypherService fewShotCypherService;
 
-    public EvaluationScheduler(GoldEntryRepository goldEntryRepository, GoldEntryService goldEntryService, EvaluationService evaluationService, Neo4jService neo4jService, AIStoCQPCompiler cqpCompiler, AISGenerator aisGenerator, OlapCypherBuilder cypherBuilder, CsvParserImpl csvParser, CypherGenerator cypherGenerator, CypherService cypherService) {
+    public EvaluationScheduler(GoldEntryRepository goldEntryRepository, GoldEntryService goldEntryService, EvaluationService evaluationService, Neo4jService neo4jService, AIStoCQPCompiler cqpCompiler, AISGenerator aisGenerator, OlapCypherBuilder cypherBuilder, CsvParserImpl csvParser, CypherGenerator cypherGenerator, CypherService cypherService, FewShotCypherService fewShotCypherService) {
         this.goldEntryRepository = goldEntryRepository;
         this.goldEntryService = goldEntryService;
         this.evaluationService = evaluationService;
@@ -55,6 +57,7 @@ public class EvaluationScheduler {
         this.csvParser = csvParser;
         this.cypherGenerator = cypherGenerator;
         this.cypherService = cypherService;
+        this.fewShotCypherService = fewShotCypherService;
     }
     @Transactional(rollbackOn =  EvaluationRollbackException.class)
 //    @Scheduled(fixedDelay = 20 * 1000)
@@ -287,6 +290,40 @@ public class EvaluationScheduler {
                             testResponse, true, provenanceMatched, resultMatch);
                 }catch (Exception e){
                     cypherService.create(key, goldEntry.getQuestion(), goldEntry, testCypher,
+                            null, false, false, false);
+                }
+            }
+            System.out.println("Gold entry processed. id --> " + goldEntry.getId());
+            goldEntry.setProcessed(true);
+            goldEntryRepository.save(goldEntry);
+        }
+    }
+//    @Scheduled(fixedDelay = 20 * 1000)
+    public void processFewShotCypherBatch(){
+        List<GoldEntry> goldEntries = goldEntryService.findRandomlySelectedGoldEntryList(QueryType.DOMINANT_ATTRIBUTION);
+        Map<String, List<String>> cypherMap;
+        try{
+            cypherMap = cypherGenerator.generateCypherFewShotBatch(goldEntries);
+        } catch(Exception e){
+            throw new EvaluationRollbackException("Cypher generation failed");
+        }
+        for(int i = 0; i < goldEntries.size(); i++){
+            GoldEntry goldEntry = goldEntries.get(i);
+            for(String key:  cypherMap.keySet()){
+                List<String> cypherList = null;
+                String testCypher = null;
+                if(cypherMap.get(key) != null)cypherList = cypherMap.get(key);
+                if (cypherList != null && !cypherList.isEmpty() && i < cypherList.size()) testCypher = cypherList.get(i);
+                if(testCypher == null) throw new EvaluationRollbackException("Found null predicted cypher for " + key);
+                OlapCypherResponse testResponse;
+                try{
+                    testResponse = OlapCypherResponseMapper.mapCypherResponse(neo4jService.fetch(testCypher));
+                    boolean provenanceMatched = checkProvenanceForLLMGeneratedCypher(testResponse, goldEntry.getGoldProvenance());
+                    boolean resultMatch = checkResult(testResponse, goldEntry.getGoldResult());
+                    fewShotCypherService.create(key, goldEntry.getQuestion(), goldEntry, testCypher,
+                            testResponse, true, provenanceMatched, resultMatch);
+                }catch (Exception e){
+                    fewShotCypherService.create(key, goldEntry.getQuestion(), goldEntry, testCypher,
                             null, false, false, false);
                 }
             }
