@@ -30,8 +30,8 @@ public class AccuracyCalculator {
         for (QueryType queryType : QueryType.values()) {
             List<EvaluationRecord> recordList =
                     evaluationService.findAllByQueryType(queryType);
-            if (recordList.size() % 4 != 0)
-                throw new RuntimeException("Evaluation record size is not divisible by 4!");
+            if (recordList.size() != 1600)
+                throw new RuntimeException("Evaluation record size is not equal to 400");
             Map<String, long[]> temp = new HashMap<>();
             for (EvaluationRecord record : recordList) {
                 String modelName = record.getModelName();
@@ -58,6 +58,7 @@ public class AccuracyCalculator {
                 precisionMap.computeIfAbsent(model, k -> new ArrayList<>()).add(precision);
                 f1Map.computeIfAbsent(model, k -> new ArrayList<>()).add(f1);
             }
+            temp.clear();
         }
 
         // === Final Mean Calculation ===

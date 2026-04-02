@@ -24,6 +24,10 @@ public class AccuracyController {
     public ResponseEntity<?> getAisAccuracy() {
         return new ResponseEntity<>(accuracyCalculator.calculateMeanAisPrediction(), HttpStatus.OK);
     }
+    @GetMapping("/ais-queryType")
+    public ResponseEntity<?> getAisAccuracy(@RequestParam("queryType") QueryType queryType) {
+        return new ResponseEntity<>(accuracyCalculator.calculateAisAccuracy(queryType), HttpStatus.OK);
+    }
     @GetMapping("/cypher")
     public ResponseEntity<?> getCypherAccuracy(@RequestParam QueryType queryType) {
 //        evaluationScheduler.generateFineTuneData();
