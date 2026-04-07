@@ -4,6 +4,8 @@ import com.example.text2cypher.ais_evaluation.record.*;
 import com.example.text2cypher.ais_evaluation.utils.ExactMatchAccuracy;
 import com.example.text2cypher.cypher_benchmark.dto.QueryType;
 import com.example.text2cypher.cypher_utils.cqp.CQP;
+import com.example.text2cypher.evaluation_split.zero_shot_ais2cypher.ZeroShotAis2Cypher;
+import com.example.text2cypher.evaluation_split.zero_shot_ais2cypher.ZeroShotAis2CypherService;
 import com.example.text2cypher.utils.LocalMapper;
 import org.springframework.stereotype.Service;
 
@@ -18,10 +20,12 @@ public class AccuracyCalculator {
     private final EvaluationService evaluationService;
     private final CypherService cypherService;
     private final FewShotCypherService fewShotCypherService;
-    public AccuracyCalculator(EvaluationService evaluationService, CypherService cypherService, FewShotCypherService fewShotCypherService) {
+    private final ZeroShotAis2CypherService zeroShotAis2CypherService;
+    public AccuracyCalculator(EvaluationService evaluationService, CypherService cypherService, FewShotCypherService fewShotCypherService, ZeroShotAis2CypherService zeroShotAis2CypherService) {
         this.evaluationService = evaluationService;
         this.cypherService = cypherService;
         this.fewShotCypherService = fewShotCypherService;
+        this.zeroShotAis2CypherService = zeroShotAis2CypherService;
     }
     public Map<String, Map<String, Double>> calculateMeanAisPrediction() {
         Map<String, List<Double>> recallMap = new HashMap<>();
@@ -276,4 +280,40 @@ public class AccuracyCalculator {
         return result;
     }
 
+    public Map<String, Map<String, Double>> calculateZeroShotAIS2CypherQueryTypeAccuracyPrediction(QueryType queryType, Long stage) {
+        Map<String, List<Double>> recallMap = new HashMap<>();
+        Map<String, List<Double>> precisionMap = new HashMap<>();
+        Map<String, List<Double>> f1Map = new HashMap<>();
+        List<ZeroShotAis2Cypher> recordList =
+                zeroShotAis2CypherService.findAllByQueryTypeAndEvaluationStage(queryType, stage);
+        if (recordList.size() != 800) throw new RuntimeException("Evaluation record size is not equal to 800");
+        Map<String, long[]> temp = new HashMap<>();
+        for (ZeroShotAis2Cypher record : recordList) {
+            String modelName = record.getModelName();
+            long predicted = record.getPredictedAttributes();
+            long correct = record.getCorrectAttributes();
+            String goldCqp = record.getGoldEntry().getGoldCqp();
+            CQP goldCQP = LocalMapper.read(goldCqp, CQP.class);
+            long gold = ExactMatchAccuracy.getPredictedScore(goldCQP);
+            temp.computeIfAbsent(modelName, k -> new long[3]);
+            temp.get(modelName)[0] += predicted; // predicted
+            temp.get(modelName)[1] += correct;   // correct
+            temp.get(modelName)[2] += gold;      // gold
+        }
+        Map<String, Map<String, Double>> result = new HashMap<>();
+        for (Map.Entry<String, long[]> entry : temp.entrySet()) {
+            String model = entry.getKey();
+            long[] vals = entry.getValue();
+            double precision = vals[0] == 0 ? 0 : (double) vals[1] / vals[0];
+            double recall = vals[2] == 0 ? 0 : (double) vals[1] / vals[2];
+            double f1 = (precision + recall == 0) ? 0 :
+                    (2 * precision * recall) / (precision + recall);
+            Map<String, Double> map = new HashMap<>();
+            map.put("recall", recall);
+            map.put("precision", precision);
+            map.put("f1", f1);
+            result.put(model, map);
+        }
+        return result;
+    }
 }

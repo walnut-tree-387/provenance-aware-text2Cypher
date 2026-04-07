@@ -13,11 +13,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/accuracy")
 public class AccuracyController {
     private final AccuracyCalculator accuracyCalculator;
-    private final EvaluationScheduler evaluationScheduler;
 
-    public AccuracyController(AccuracyCalculator accuracyCalculator, EvaluationScheduler evaluationScheduler) {
+    public AccuracyController(AccuracyCalculator accuracyCalculator) {
         this.accuracyCalculator = accuracyCalculator;
-        this.evaluationScheduler = evaluationScheduler;
     }
 
     @GetMapping("/ais")
@@ -25,17 +23,15 @@ public class AccuracyController {
         return new ResponseEntity<>(accuracyCalculator.calculateMeanAisPrediction(), HttpStatus.OK);
     }
     @GetMapping("/ais-queryType")
-    public ResponseEntity<?> getAisAccuracy(@RequestParam("queryType") QueryType queryType) {
-        return new ResponseEntity<>(accuracyCalculator.calculateAisAccuracy(queryType), HttpStatus.OK);
+    public ResponseEntity<?> getAisAccuracy(@RequestParam("queryType") QueryType queryType, @RequestParam("stage") Long stage) {
+        return new ResponseEntity<>(accuracyCalculator.calculateZeroShotAIS2CypherQueryTypeAccuracyPrediction(queryType, stage), HttpStatus.OK);
     }
     @GetMapping("/cypher")
     public ResponseEntity<?> getCypherAccuracy(@RequestParam QueryType queryType) {
-//        evaluationScheduler.generateFineTuneData();
         return new ResponseEntity<>(accuracyCalculator.calculateCypherAccuracy(queryType), HttpStatus.OK);
     }
     @GetMapping("/few-shot/cypher")
     public ResponseEntity<?> getFewShotCypherAccuracy(@RequestParam QueryType queryType) {
-//        evaluationScheduler.generateFineTuneData();
         return new ResponseEntity<>(accuracyCalculator.calculateFewShotCypherAccuracy(queryType), HttpStatus.OK);
     }
     @GetMapping("/compare-accuracy")

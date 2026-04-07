@@ -17,6 +17,9 @@ import com.example.text2cypher.cypher_utils.cqp.Measure;
 import com.example.text2cypher.cypher_utils.cypher.OlapCypherBuilder;
 import com.example.text2cypher.cypher_utils.cypher.OlapCypherResponse;
 import com.example.text2cypher.cypher_utils.cypher.OlapCypherResponseMapper;
+import com.example.text2cypher.evaluation_split.EvaluationSplitService;
+import com.example.text2cypher.evaluation_split.zero_shot_direct_cypher.ZeroShotDirectCypher;
+import com.example.text2cypher.evaluation_split.zero_shot_direct_cypher.ZeroShotDirectCypherService;
 import com.example.text2cypher.graph_generation.csv_parser.CsvParserImpl;
 import com.example.text2cypher.graph_generation.dto.FineTuneData;
 import com.example.text2cypher.neo4j.Neo4jService;
@@ -34,6 +37,7 @@ import static com.example.text2cypher.ais_evaluation.utils.ProvenanceChecker.*;
 
 @Component
 public class EvaluationScheduler {
+    private static final Long evaluationStage = 2L;
     private final GoldEntryRepository goldEntryRepository;
     private final GoldEntryService goldEntryService;
     private final EvaluationService evaluationService;
@@ -45,8 +49,10 @@ public class EvaluationScheduler {
     private final CypherGenerator cypherGenerator;
     private final CypherService cypherService;
     private final FewShotCypherService fewShotCypherService;
+    private final ZeroShotDirectCypherService zeroShotDirectCypherService;
+    private final EvaluationSplitService evaluationSplitService;
 
-    public EvaluationScheduler(GoldEntryRepository goldEntryRepository, GoldEntryService goldEntryService, EvaluationService evaluationService, Neo4jService neo4jService, AIStoCQPCompiler cqpCompiler, AISGenerator aisGenerator, OlapCypherBuilder cypherBuilder, CsvParserImpl csvParser, CypherGenerator cypherGenerator, CypherService cypherService, FewShotCypherService fewShotCypherService) {
+    public EvaluationScheduler(GoldEntryRepository goldEntryRepository, GoldEntryService goldEntryService, EvaluationService evaluationService, Neo4jService neo4jService, AIStoCQPCompiler cqpCompiler, AISGenerator aisGenerator, OlapCypherBuilder cypherBuilder, CsvParserImpl csvParser, CypherGenerator cypherGenerator, CypherService cypherService, FewShotCypherService fewShotCypherService, ZeroShotDirectCypherService zeroShotDirectCypherService, EvaluationSplitService evaluationSplitService) {
         this.goldEntryRepository = goldEntryRepository;
         this.goldEntryService = goldEntryService;
         this.evaluationService = evaluationService;
@@ -58,6 +64,8 @@ public class EvaluationScheduler {
         this.cypherGenerator = cypherGenerator;
         this.cypherService = cypherService;
         this.fewShotCypherService = fewShotCypherService;
+        this.zeroShotDirectCypherService = zeroShotDirectCypherService;
+        this.evaluationSplitService = evaluationSplitService;
     }
     @Transactional(rollbackOn =  EvaluationRollbackException.class)
 //    @Scheduled(fixedDelay = 20 * 1000)
@@ -139,7 +147,8 @@ public class EvaluationScheduler {
     public void reProcessNullPredictedAIS(){
         String modelName = "openai/gpt-oss-120b";
         List<EvaluationRecord> records = evaluationService.getNullPredictedAIS(modelName);
-        List<AIS> aisList = aisGenerator.generateAISBatchForNullPredictedAIS(records, modelName);
+        List<String> questions = records.stream().map(EvaluationRecord::getQuestion).toList();
+        List<AIS> aisList = aisGenerator.generateAISBatchForNullPredictedAIS(questions, modelName);
         for(int i = 0; i < records.size(); i++){
             AIS ais = null;
             if (aisList != null && !aisList.isEmpty() && i < aisList.size()) ais = aisList.get(i);
@@ -264,9 +273,9 @@ public class EvaluationScheduler {
     }
 
     @Transactional(rollbackOn =  EvaluationRollbackException.class)
-//    @Scheduled(fixedDelay = 20 * 1000)
+    @Scheduled(fixedDelay = 20 * 1000)
     public void processCypherBatch(){
-        List<GoldEntry> goldEntries = goldEntryService.findRandomlySelectedGoldEntryList(QueryType.COUNT);
+        List<GoldEntry> goldEntries = evaluationSplitService.findByQueryTypeAndEvaluationStage(QueryType.COUNT, evaluationStage, 15);
         Map<String, List<String>> cypherMap;
         try{
             cypherMap = cypherGenerator.generateCypherBatch(goldEntries);
@@ -280,22 +289,72 @@ public class EvaluationScheduler {
                 String testCypher = null;
                 if(cypherMap.get(key) != null)cypherList = cypherMap.get(key);
                 if (cypherList != null && !cypherList.isEmpty() && i < cypherList.size()) testCypher = cypherList.get(i);
-                if(testCypher == null) throw new EvaluationRollbackException("Found null predicted cypher for " + key);
+//                if(testCypher == null) throw new EvaluationRollbackException("Found null predicted cypher for " + key);
                 OlapCypherResponse testResponse;
                 try{
                     testResponse = OlapCypherResponseMapper.mapCypherResponse(neo4jService.fetch(testCypher));
                     boolean provenanceMatched = checkProvenanceForLLMGeneratedCypher(testResponse, goldEntry.getGoldProvenance());
                     boolean resultMatch = checkResult(testResponse, goldEntry.getGoldResult());
-                    cypherService.create(key, goldEntry.getQuestion(), goldEntry, testCypher,
-                            testResponse, true, provenanceMatched, resultMatch);
+                    zeroShotDirectCypherService.create(key, goldEntry.getQuestion(), goldEntry, testCypher,
+                            testResponse, true, provenanceMatched, resultMatch, evaluationStage);
                 }catch (Exception e){
-                    cypherService.create(key, goldEntry.getQuestion(), goldEntry, testCypher,
-                            null, false, false, false);
+                    zeroShotDirectCypherService.create(key, goldEntry.getQuestion(), goldEntry, testCypher,
+                            null, false, false, false, evaluationStage);
                 }
             }
-            System.out.println("Gold entry processed. id --> " + goldEntry.getId());
-            goldEntry.setProcessed(true);
-            goldEntryRepository.save(goldEntry);
+        }
+        System.out.println("Evaluation finished for " + goldEntries.getFirst().getId() + " to " + goldEntries.getLast().getId());
+    }
+//    @Scheduled(fixedDelay = 20 * 1000)
+    public void updateNullPredictedZeroShotCypher(){
+        String modelName = "qwen/qwen3-32b";
+        List<ZeroShotDirectCypher> nullPredictedCyphers = zeroShotDirectCypherService.getNullPredictedCypher(modelName);
+        List<GoldEntry> goldEntries = nullPredictedCyphers.stream().map(ZeroShotDirectCypher::getGoldEntry).toList();
+        List<String> questions = goldEntries.stream().map(GoldEntry::getQuestion).toList();
+        List<String> cypherList;
+        try{
+            cypherList = cypherGenerator.generateDirectCypherBatchForNullPredictedEntry(questions, modelName);
+        } catch(Exception e){
+            throw new EvaluationRollbackException("AIS generation failed");
+        }
+        for(int i = 0; i < nullPredictedCyphers.size(); i++){
+            GoldEntry goldEntry = nullPredictedCyphers.get(i).getGoldEntry();
+            String testCypher = null;
+            if (cypherList != null && !cypherList.isEmpty() && i < cypherList.size()) testCypher = cypherList.get(i);
+            OlapCypherResponse testResponse;
+            try{
+                testResponse = OlapCypherResponseMapper.mapCypherResponse(neo4jService.fetch(testCypher));
+                boolean provenanceMatched = checkProvenanceForLLMGeneratedCypher(testResponse, goldEntry.getGoldProvenance());
+                boolean resultMatch = checkResult(testResponse, goldEntry.getGoldResult());
+                zeroShotDirectCypherService.update(nullPredictedCyphers.get(i), testCypher, testResponse,
+                        true, provenanceMatched, resultMatch);
+            }catch (Exception e){
+                zeroShotDirectCypherService.update(nullPredictedCyphers.get(i), testCypher, null,
+                        false, false, false);
+            }
+        }
+        System.out.println("Evaluation finished for " + goldEntries.getFirst().getId() + " to " + goldEntries.getLast().getId());
+    }
+    public void updateNullPredictedZeroShotCypherFromInput(List<String> cypherList){
+        String modelName = "qwen/qwen3-32b";
+        List<ZeroShotDirectCypher> nullPredictedCyphers = zeroShotDirectCypherService.getNullPredictedCypher(modelName);
+        nullPredictedCyphers = nullPredictedCyphers.reversed();
+        for(int i = 0; i < nullPredictedCyphers.size(); i++){
+            GoldEntry goldEntry = nullPredictedCyphers.get(i).getGoldEntry();
+            String testCypher = null;
+            if (cypherList != null && !cypherList.isEmpty() && i < cypherList.size()) testCypher = cypherList.get(i);
+            OlapCypherResponse testResponse;
+            try{
+                testResponse = OlapCypherResponseMapper.mapCypherResponse(neo4jService.fetch(testCypher));
+                boolean provenanceMatched = checkProvenanceForLLMGeneratedCypher(testResponse, goldEntry.getGoldProvenance());
+                boolean resultMatch = checkResult(testResponse, goldEntry.getGoldResult());
+                zeroShotDirectCypherService.update(nullPredictedCyphers.get(i), testCypher, testResponse,
+                        true, provenanceMatched, resultMatch);
+            }catch (Exception e){
+                zeroShotDirectCypherService.update(nullPredictedCyphers.get(i), testCypher, null,
+                        false, false, false);
+            }
+            System.out.println("Evaluation finished for " + nullPredictedCyphers.get(i).getId());
         }
     }
 //    @Scheduled(fixedDelay = 20 * 1000)

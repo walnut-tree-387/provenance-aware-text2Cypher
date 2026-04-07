@@ -2,6 +2,7 @@ package com.example.text2cypher.ais_evaluation.utils;
 import com.example.text2cypher.ais_evaluation.ais.AIS;
 import com.example.text2cypher.utils.LocalMapper;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.JsonNode;
 
 import java.util.List;
 
@@ -22,7 +23,8 @@ public class AISNormalizer {
         json = repairJson(json);
         System.out.println("Model: " + modelName + "\n Json Produced : " + json + "\n");
         try {
-            return LocalMapper.readList(json, AIS.class);
+            JsonNode response = LocalMapper.convertToJsonNode(json);
+            return LocalMapper.readListOneByOne(response, AIS.class);
         } catch (Exception e) {
             return List.of(); // never return null
         }

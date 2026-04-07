@@ -525,8 +525,18 @@ public final class AISPromptBuilder {
                    - if it ask for aggregate on node count for sum - sum(o.count) AS total
                    - if query required multiple alias name them as key1, key2 etc.
                    - if query demands multiple variables for single object alias them as (key1, value1), (key2, value2).
-                   - add collect(o) as provenance as the default projection alias for every query. Don't forget to add this alias. Its a mandatory projection needed for all the query.
                    - Don't use any other alias by yourself, you need to be consistent on alias.
+                  PROVENANCE RULE:
+                   - provenance MUST include ONLY contributing Observation nodes.
+                   - MUST exclude:
+                     - o.count = 0
+                     - non-contributing nodes
+                     - nodes filtered out by aggregation logic
+                   - MUST use:
+                     collect(CASE WHEN <same_condition_as_aggregation> AND o.count > 0 THEN o END) AS provenance
+                   - DO NOT directly use:
+                     collect(o)
+                   - Provenance MUST align EXACTLY with aggregation logic.
                 4. ADD ORDER BY CLAUSE(OPTIONAL) : In this step you will use the alias created in STEP 3(Projection Variables) to define ORDER BY if needed by The query.
                 5. ADD LIMIT CLAUSE(OPTIONAL) : In this step you will use LIMIT clause to LIMIT the result to top k(K value can 1 be to k depending on the query)
                 6. RETURN CLAUSE(MUST HAVE) : In this step you will return the projection you defined on step 3 and also the ones asked by query. Sometimes some projection variables are needed only for GROUP BY or ORDER BY CLAUSE. So, Pay attention to the projection alias list you defined and add only the ones asked in the query.
@@ -549,10 +559,19 @@ public final class AISPromptBuilder {
                 - Try to extract the exact meaning and intent of the question and generate constraints accordingly.
                 - Do NOT add, remove, or change any constraints.
                 - Do NOT introduce new nodes, relations, or properties
-                - The output MUST be a json list of valid Cypher queries.
+                - The output MUST be a JSON array of Cypher query strings.
+                - Each item MUST be a plain Cypher query string.
+                - DO NOT include keys, explanations, or metadata.
                 - DO NOT use markdown, code blocks, backticks, or language tags (e.g., ```cypher).
                 - The order of Cypher query strings MUST match the order of the input questions.
-                 - Generate exactly one cypher query per question.
+                - Generate exactly one cypher query per question.
+                - Example of VALID output:
+                  ["MATCH ... RETURN ...", "MATCH ... RETURN ..."]
+                
+                - Example of INVALID output:
+                  [{"query": "MATCH ..."}]
+                  {"query": "MATCH ..."}
+                  MATCH ...
                 Natural Language Questions:
                 "%s"
                 
