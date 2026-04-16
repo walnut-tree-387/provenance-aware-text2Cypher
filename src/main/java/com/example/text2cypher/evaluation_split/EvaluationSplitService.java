@@ -12,7 +12,7 @@ import java.util.List;
 
 @Service
 public class EvaluationSplitService {
-    private static int PAGE_NUMBER = 4;
+    private static int PAGE_NUMBER = 0;
     private final EvaluationSplitRepository evaluationSplitRepository;
     private final GoldEntryService goldEntryService;
     public EvaluationSplitService(EvaluationSplitRepository evaluationSplitRepository, GoldEntryService goldEntryService) {
