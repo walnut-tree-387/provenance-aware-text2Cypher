@@ -46,17 +46,17 @@ public final class LocalMapper {
             );
         }
     }
-    public static <T> List<T> readListOneByOne(JsonNode json, Class<T> elementType) {
+    public static <T> List<T> readListOneByOne(JsonNode root, Class<T> elementType) {
         List<T> result = new ArrayList<>();
         try {
-            JsonNode root = convertToJsonNode(json);
             if (!root.isArray()) {
                 throw new IllegalArgumentException("Expected JSON array");
             }
             for (JsonNode node : root) {
                 try {
-                    T obj = objectMapper.treeToValue(node, elementType);
-                    result.add(obj);
+                    T target = elementType.getDeclaredConstructor().newInstance();
+                    objectMapper.readerForUpdating(target).readValue(node);
+                    result.add(target);
                 } catch (Exception e) {
                     try {
                         result.add(elementType.getDeclaredConstructor().newInstance());
@@ -71,9 +71,9 @@ public final class LocalMapper {
         }
         return result;
     }
-    public static JsonNode convertToJsonNode(Object value) {
+    public static JsonNode convertToJsonNode(String value) {
         try {
-            return objectMapper.valueToTree(value);
+            return objectMapper.readTree(value);
         } catch (Exception e) {
             throw new IllegalStateException(
                     "Failed to convert object to JsonNode",

@@ -3,7 +3,7 @@ package com.example.text2cypher.result;
 import java.util.ArrayList;
 import java.util.List;
 
-class MetricAccumulator {
+public class MetricAccumulator {
     List<Double> values = new ArrayList<>();
 
     void add(double v) {
@@ -14,8 +14,7 @@ class MetricAccumulator {
         return values.stream().mapToDouble(Double::doubleValue).average().orElse(0);
     }
 
-    double std() {
-        double mean = mean();
+    double std(double mean) {
         return Math.sqrt(values.stream()
                 .mapToDouble(v -> Math.pow(v - mean, 2))
                 .average().orElse(0));

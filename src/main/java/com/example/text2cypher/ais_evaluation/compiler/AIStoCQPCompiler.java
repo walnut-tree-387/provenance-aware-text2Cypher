@@ -56,9 +56,12 @@ public class AIStoCQPCompiler {
     }
     public List<Measure> compileIntents(List<AISIntent> aisIntents) {
         if(aisIntents == null || aisIntents.isEmpty()) return List.of();
-        return aisIntents.stream()
-                .map(this::mapMeasure)
-                .collect(Collectors.toList());
+        List<Measure> measures = new ArrayList<>();
+        for(AISIntent aisIntent : aisIntents){
+            Measure measure = mapMeasure(aisIntent);
+            if(measure != null) measures.add(measure);
+        }
+        return measures;
     }
     public List<GroupKey> compileAxes(List<AISAxis> axes) {
         if(axes == null || axes.isEmpty()) return List.of();
@@ -111,17 +114,21 @@ public class AIStoCQPCompiler {
         String alias = normalizeAlias(a.getName());
         Dimension dimension = EnumCompiler.compileDimension(a.getDimension());
         compilerContext.registerAxis(alias, dimension);
-
         return new GroupKey(dimension, alias);
     }
     private Measure mapMeasure(AISIntent i) {
         String alias = normalizeAlias(i.getName());
         AggregationType type = EnumCompiler.compileIntentType(i.getType());
-        List<Filter> filterList = i.getLocalContext().stream()
-                .map(this::compileFilter)
-                .toList();
+        List<Filter> filterList = new ArrayList<>();
+        if(i.getLocalContext() != null && !i.getLocalContext().isEmpty()) {
+            filterList = i.getLocalContext().stream().map(this::compileFilter).toList();
+        }
         Measure measure = new Measure(type, alias, filterList);
-        compilerContext.registerMeasure(alias, measure);
+        try{
+            compilerContext.registerMeasure(alias, measure);
+        }catch(RuntimeException e){
+            return null;
+        }
         storeNormalizedEffectiveFilters(measure);
         return measure;
     }
@@ -135,6 +142,7 @@ public class AIStoCQPCompiler {
     }
 
     private String normalizeAlias(String raw) {
+        if(raw == null || raw.isEmpty()) return raw;
         String normalized = raw.toLowerCase();
         if (normalized.matches("-?\\d+(\\.\\d+)?")) {
             return normalized;

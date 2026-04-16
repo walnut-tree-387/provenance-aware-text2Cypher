@@ -64,7 +64,7 @@ public class AISGenerator {
         List<String> questions = goldEntries.stream().map(GoldEntry::getQuestion).toList();
         String prompt = promptBuilder.buildAISPromptBatch(questions);
         List<String> ollamaModels = List.of("gpt-oss:120b-cloud",  "kimi-k2:1t-cloud");
-        List<String> groqModels = List.of(  "meta-llama/Llama-3.3-70B-Instruct:groq", "Qwen/Qwen3-32B:groq");
+        List<String> groqModels = List.of("meta-llama/Llama-3.3-70B-Instruct:groq", "Qwen/Qwen3-32B:groq");
         Map<String, List<AIS>> modelMap = new HashMap<>();
         long cycle = 0;
         for(String model: ollamaModels){
@@ -76,6 +76,7 @@ public class AISGenerator {
                     .getContent();
             List<AIS> aisList = answerNormalizer.normalizeAISList(rawText, model);
             modelMap.put(model, aisList);
+            System.out.println("Response came for =======================================" + model);
             if(cycle <= 1)SleeperCoach.sleepMinutes(20000);
         }
         cycle = 0;
@@ -89,13 +90,13 @@ public class AISGenerator {
                     .getContent();
             List<AIS> aisList = answerNormalizer.normalizeAISList(rawText, model);
             modelMap.put(model, aisList);
+            System.out.println("Response came for =======================================" + model);
             if(cycle <= 1)SleeperCoach.sleepMinutes(20000);
         }
         return modelMap;
     }
-    public List<AIS> generateAISBatchForNullPredictedAIS(List<EvaluationRecord> records, String modelName) {
+    public List<AIS> generateAISBatchForNullPredictedAIS(List<String> questions, String modelName) {
         List<AIS> aisList = new ArrayList<>();
-        List<String> questions = records.stream().map(EvaluationRecord::getQuestion).toList();
         String prompt = promptBuilder.buildAISPromptBatch(questions);
         if(modelName.equals("openai/gpt-oss-120b") || modelName.equals("moonshotai/kimi-k2-instruct-0905")){
             String tempModel = "";

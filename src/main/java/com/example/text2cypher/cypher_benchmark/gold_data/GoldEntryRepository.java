@@ -32,5 +32,5 @@ public interface GoldEntryRepository extends JpaRepository<GoldEntry, Long> {
         ORDER BY function('RANDOM')
     """)
     List<GoldEntry> findRandom200GoldEntry(QueryType queryType, Pageable pageable);
-
+    List<GoldEntry> findAllByQueryType(QueryType queryType);
 }

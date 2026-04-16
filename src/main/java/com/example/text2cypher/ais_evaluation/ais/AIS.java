@@ -8,17 +8,18 @@ import com.example.text2cypher.ais_evaluation.ais.intent.AISIntent;
 import com.example.text2cypher.ais_evaluation.ais.order.AISOrderIntent;
 import lombok.Data;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
 public class AIS {
-    AISFact fact;
-    List<AISContext> context;
-    List<AISAxis> axes;
-    List<AISIntent> intents;
-    List<AISDerivedIntent> derivedIntents;
-    List<AISOrderIntent> orderIntents;
-    Integer limit;
-    Integer offset;
-    List<String> projection;
+    AISFact fact = new AISFact("Observation", "count");
+    List<AISContext> context = new ArrayList<>();
+    List<AISAxis> axes = new ArrayList<>();
+    List<AISIntent> intents = new ArrayList<>();
+    List<AISDerivedIntent> derivedIntents = new ArrayList<>();
+    List<AISOrderIntent> orderIntents = new ArrayList<>();
+    Integer limit = null;
+    Integer offset = null;
+    List<String> projection = new ArrayList<>();
 }
