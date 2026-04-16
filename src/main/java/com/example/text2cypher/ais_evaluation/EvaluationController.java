@@ -2,6 +2,8 @@ package com.example.text2cypher.ais_evaluation;
 
 import com.example.text2cypher.ais_evaluation.ais.AIS;
 import com.example.text2cypher.ais_evaluation.utils.EvaluationScheduler;
+import com.example.text2cypher.ais_evaluation.utils.ThreeStageEvaluation;
+import com.example.text2cypher.evaluation_split.zero_shot_ais2cypher.ZeroShotAis2CypherService;
 import com.example.text2cypher.utils.LocalMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,8 +19,10 @@ import java.util.Set;
 @RequestMapping("/api/v1/evaluate")
 public class EvaluationController {
     private final EvaluationScheduler evaluationScheduler;
-    public EvaluationController(EvaluationScheduler evaluationScheduler) {
+    private final ThreeStageEvaluation stageEvaluation;
+    public EvaluationController(EvaluationScheduler evaluationScheduler, ThreeStageEvaluation stageEvaluation) {
         this.evaluationScheduler = evaluationScheduler;
+        this.stageEvaluation = stageEvaluation;
     }
 
     @PostMapping("/{goldId}")
@@ -32,7 +36,12 @@ public class EvaluationController {
     @PostMapping("/ais/fix")
     public ResponseEntity<?> fixAIS(@RequestBody JsonNode ais){
         List<AIS> aisList = LocalMapper.readListOneByOne(ais, AIS.class);
-        evaluationScheduler.reProcessFailedAIS(aisList);
+        stageEvaluation.reProcessFailedAIS(aisList);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+    @PutMapping("/null-predicted-cypher")
+    public ResponseEntity<?> updateNullPredictedZeroShotDirectCypher(@RequestBody List<String> cyphers){
+        evaluationScheduler.updateNullPredictedZeroShotCypherFromInput(cyphers);
         return new ResponseEntity<>(HttpStatus.OK);
     }
 }

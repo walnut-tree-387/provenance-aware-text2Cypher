@@ -37,12 +37,19 @@ public class OlapCypherBuilder {
         if(offset != null)cypher.append(" SKIP ").append(offset).append("\n");
     }
     private void orderClause(List<OrderSpec> o, StringBuilder cypher) {
-        if(o.isEmpty()) return;
-        cypher.append("ORDER BY ");
-        String orderString = o.stream()
-                .map(spec -> String.format("%s %s", spec.getField(), spec.getDirection()))
-                .collect(Collectors.joining(", "));
-        cypher.append(orderString).append("\n");
+        if (o == null || o.isEmpty()) return;
+        StringBuilder orderBuilder = new StringBuilder();
+        for (OrderSpec order : o) {
+            if (order != null && order.getField() != null && order.getDirection() != null) {
+                if (!orderBuilder.isEmpty()) {
+                    orderBuilder.append(", ");
+                }
+                orderBuilder.append(String.format("%s %s", order.getField(), order.getDirection()));
+            }
+        }
+        if (!orderBuilder.isEmpty()) {
+            cypher.append("ORDER BY ").append(orderBuilder).append("\n");
+        }
 
     }
     private void postAggregationClause(List<PostAggregation> posts, StringBuilder cypher) {

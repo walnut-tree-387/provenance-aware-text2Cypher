@@ -525,8 +525,18 @@ public final class AISPromptBuilder {
                    - if it ask for aggregate on node count for sum - sum(o.count) AS total
                    - if query required multiple alias name them as key1, key2 etc.
                    - if query demands multiple variables for single object alias them as (key1, value1), (key2, value2).
-                   - add collect(o) as provenance as the default projection alias for every query. Don't forget to add this alias. Its a mandatory projection needed for all the query.
                    - Don't use any other alias by yourself, you need to be consistent on alias.
+                  PROVENANCE RULE:
+                   - provenance MUST include ONLY contributing Observation nodes.
+                   - MUST exclude:
+                     - o.count = 0
+                     - non-contributing nodes
+                     - nodes filtered out by aggregation logic
+                   - MUST use:
+                     collect(CASE WHEN <same_condition_as_aggregation> AND o.count > 0 THEN o END) AS provenance
+                   - DO NOT directly use:
+                     collect(o)
+                   - Provenance MUST align EXACTLY with aggregation logic.
                 4. ADD ORDER BY CLAUSE(OPTIONAL) : In this step you will use the alias created in STEP 3(Projection Variables) to define ORDER BY if needed by The query.
                 5. ADD LIMIT CLAUSE(OPTIONAL) : In this step you will use LIMIT clause to LIMIT the result to top k(K value can 1 be to k depending on the query)
                 6. RETURN CLAUSE(MUST HAVE) : In this step you will return the projection you defined on step 3 and also the ones asked by query. Sometimes some projection variables are needed only for GROUP BY or ORDER BY CLAUSE. So, Pay attention to the projection alias list you defined and add only the ones asked in the query.
@@ -549,10 +559,19 @@ public final class AISPromptBuilder {
                 - Try to extract the exact meaning and intent of the question and generate constraints accordingly.
                 - Do NOT add, remove, or change any constraints.
                 - Do NOT introduce new nodes, relations, or properties
-                - The output MUST be a json list of valid Cypher queries.
+                - The output MUST be a JSON array of Cypher query strings.
+                - Each item MUST be a plain Cypher query string.
+                - DO NOT include keys, explanations, or metadata.
                 - DO NOT use markdown, code blocks, backticks, or language tags (e.g., ```cypher).
                 - The order of Cypher query strings MUST match the order of the input questions.
-                 - Generate exactly one cypher query per question.
+                - Generate exactly one cypher query per question.
+                - Example of VALID output:
+                  ["MATCH ... RETURN ...", "MATCH ... RETURN ..."]
+                
+                - Example of INVALID output:
+                  [{"query": "MATCH ..."}]
+                  {"query": "MATCH ..."}
+                  MATCH ...
                 Natural Language Questions:
                 "%s"
                 
@@ -567,46 +586,48 @@ public final class AISPromptBuilder {
                  You are an expert understanding analytical questions and generating Neo4j Cypher queries from those natural english language questions into a Json list.
                  %s
                  %s
-                 Below are the number of example questions and their corresponding cypher queries :
-                 Question 1 : Did Barishal Metropolitan Police (BMP) record any crimes with the highest severity level (severity 5) during the first quarter of 2023?
-                 Cypher : MATCH (o:Observation)
-                 MATCH (o)-[:OF_SUBTYPE]->(est:EventSubType)-[:SUBTYPE_OF]->(et:EventType),
-                 (o)-[:IN_MONTH]->(m:Month), (o)-[:OBSERVED_IN]->(z:Zone)
-                 WHERE m.quarter = 1 AND m.year = 2023 AND z.name = 'bmp' AND et.name = 'crime' AND est.severity >= 5
-                 WITH SUM(o.count) AS count1, collect(CASE\s
-                 WHEN o.count > 0  THEN o END) AS provenance\s
-                 WITH *, count1 > 0 AS hasSeverity5Crime
-                 RETURN hasSeverity5Crime, provenance
-                 Question 2 : Was there any recorded incident of "other_cases" crime in the Mymensingh Range police zone during January 2019?
-                 Cypher : MATCH (o:Observation)
-                 MATCH (o)-[:OF_SUBTYPE]->(est:EventSubType)-[:SUBTYPE_OF]->(et:EventType),
-                 (o)-[:IN_MONTH]->(m:Month), (o)-[:OBSERVED_IN]->(z:Zone)
-                 WHERE m.month = 1 AND m.year = 2019 AND z.name = 'mymensingh_range' AND et.name = 'crime' AND est.name = 'other_cases'
-                 WITH SUM(o.count) AS count1, collect(CASE\s
-                 WHEN o.count > 0  THEN o END) AS provenance\s
-                 WITH *, count1 > 0 AS hasOtherCasesCrime
-                 RETURN hasOtherCasesCrime, provenance
-                 Question 3 : During the first quarter of 2022, did the combined robbery and dacoity crimes reported by Dhaka Range and DMP yield an average severity score of 5 or lower?
-                 Cypher : MATCH (o:Observation)
-                 MATCH (o)-[:OF_SUBTYPE]->(est:EventSubType)-[:SUBTYPE_OF]->(et:EventType),
-                 (o)-[:IN_MONTH]->(m:Month), (o)-[:OBSERVED_IN]->(z:Zone)
-                 WHERE m.quarter = 1 AND z.name IN ['dhaka_range', 'dmp'] AND m.year = 2022 AND est.name IN ['robbery', 'dacoity'] AND et.name = 'crime'
-                 WITH SUM(o.count * est.severity) AS severity1, SUM(o.count) AS count1, collect(CASE\s
-                 WHEN o.count > 0  THEN o END) AS provenance\s
-                 WITH *, toFloat(severity1) / CASE WHEN count1 = 0 THEN null ELSE count1 END AS avg
-                 WITH *, avg <= 5 AS result
-                 RETURN result, provenance
-                 Question 4 : In March 2021, was the difference between the number of murder crimes and arms act recoveries recorded in the Barishal division greater than 20?
-                 Cypher : MATCH (o:Observation)
-                 MATCH (o)-[:OF_SUBTYPE]->(est:EventSubType)-[:SUBTYPE_OF]->(et:EventType),
-                 (o)-[:IN_MONTH]->(m:Month), (o)-[:OBSERVED_IN]->(z:Zone)
-                 WHERE m.month = 3 AND z.division = 'Barishal' AND m.year = 2021
-                 WITH SUM(CASE WHEN est.name = 'murder' AND et.name = 'crime' THEN o.count ELSE 0 END) AS count1, SUM(CASE WHEN est.name = 'arms_act' AND et.name = 'recovery' THEN o.count ELSE 0 END) AS count2, collect(CASE\s
-                 WHEN o.count > 0 AND ((est.name IN ['arms_act']) OR (est.name IN ['murder'])) THEN o END) AS provenance\s
-                 WITH *, abs(count1 - count2) AS difference
-                 WITH *, difference > 20 AS result
-                 RETURN result, provenance
-
+                Below are the number of example questions and their corresponding cypher queries :
+                Question 1 : Did Barishal Metropolitan Police (BMP) record any crimes with the highest severity level (severity 5) during the first quarter of 2023?
+                Cypher : MATCH (o:Observation)\s
+                MATCH (o)-[:OF_SUBTYPE]->(est:EventSubType)-[:SUBTYPE_OF]->(et:EventType),
+                (o)-[:IN_MONTH]->(m:Month), (o)-[:OBSERVED_IN]->(z:Zone)
+                WHERE m.quarter = 1 AND m.year = 2023 AND z.name = 'bmp' AND et.name = 'crime' AND est.severity >= 5
+                WITH SUM(o.count) AS count1, collect(CASEs
+                WHEN o.count > 0  THEN o END) AS provenances
+                WITH *, count1 > 0 AS hasSeverity5Crime
+                RETURN hasSeverity5Crime, provenance
+                
+                Question 2 : Was there any recorded incident of "other_cases" crime in the Mymensingh Range police zone during January 2019?
+                Cypher : MATCH (o:Observation)
+                MATCH (o)-[:OF_SUBTYPE]->(est:EventSubType)-[:SUBTYPE_OF]->(et:EventType),
+                (o)-[:IN_MONTH]->(m:Month), (o)-[:OBSERVED_IN]->(z:Zone)
+                WHERE m.month = 1 AND m.year = 2019 AND z.name = 'mymensingh_range' AND et.name = 'crime' AND est.name = 'other_cases'
+                WITH SUM(o.count) AS count1, collect(CASEs
+                WHEN o.count > 0  THEN o END) AS provenances
+                WITH *, count1 > 0 AS hasOtherCasesCrime
+                RETURN hasOtherCasesCrime, provenance
+                
+                Question 3 : During the first quarter of 2022, did the combined robbery and dacoity crimes reported by Dhaka Range and DMP yield an average severity score of 5 or lower?
+                Cypher : MATCH (o:Observation)
+                MATCH (o)-[:OF_SUBTYPE]->(est:EventSubType)-[:SUBTYPE_OF]->(et:EventType),
+                (o)-[:IN_MONTH]->(m:Month), (o)-[:OBSERVED_IN]->(z:Zone)
+                WHERE m.quarter = 1 AND z.name IN ['dhaka_range', 'dmp'] AND m.year = 2022 AND est.name IN ['robbery', 'dacoity'] AND et.name = 'crime'
+                WITH SUM(o.count * est.severity) AS severity1, SUM(o.count) AS count1, collect(CASEs
+                WHEN o.count > 0  THEN o END) AS provenances
+                WITH *, toFloat(severity1) / CASE WHEN count1 = 0 THEN null ELSE count1 END AS avg
+                WITH *, avg <= 5 AS result
+                RETURN result, provenance
+                
+                Question 4 : In March 2021, was the difference between the number of murder crimes and arms act recoveries recorded in the Barishal division greater than 20?
+                Cypher : MATCH (o:Observation)
+                MATCH (o)-[:OF_SUBTYPE]->(est:EventSubType)-[:SUBTYPE_OF]->(et:EventType),
+                (o)-[:IN_MONTH]->(m:Month), (o)-[:OBSERVED_IN]->(z:Zone)
+                WHERE m.month = 3 AND z.division = 'Barishal' AND m.year = 2021
+                WITH SUM(CASE WHEN est.name = 'murder' AND et.name = 'crime' THEN o.count ELSE 0 END) AS count1, SUM(CASE WHEN est.name = 'arms_act' AND et.name = 'recovery' THEN o.count ELSE 0 END) AS count2, collect(CASEs
+                WHEN o.count > 0 AND ((est.name IN ['arms_act']) OR (est.name IN ['murder'])) THEN o END) AS provenances
+                WITH *, abs(count1 - count2) AS difference
+                WITH *, difference > 20 AS result
+                RETURN result, provenance
                  Task: Convert the following natural language questions into neo4j cypher executable queries.
                  Constraints:
                  - Do not Include INVALID CYPHER keywords. If needed use search tools to ensure about cypher keyword validity.
