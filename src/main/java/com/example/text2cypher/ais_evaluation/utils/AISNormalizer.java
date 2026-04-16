@@ -2,8 +2,10 @@ package com.example.text2cypher.ais_evaluation.utils;
 import com.example.text2cypher.ais_evaluation.ais.AIS;
 import com.example.text2cypher.utils.LocalMapper;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.JsonNode;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -29,17 +31,54 @@ public class AISNormalizer {
             return List.of(); // never return null
         }
     }
-    ///  TODO NEED TO RETURN CYPHER STRING LIST FROM THIS METHOD
     public List<String> normalizeCypher(String llmOutput) {
         String cleaned = preprocess(llmOutput);
         String json = extractJson(cleaned);
-        json = repairJson(json);
-        try {
-            return LocalMapper.readList(json, String.class);
-        } catch (Exception e) {
-            System.out.println("FAILED JSON:\n" + json);
-            return List.of();
+        List<String> cyphers;
+        try{
+            cyphers = LocalMapper.readList(json, String.class);
+            if(cyphers.size() < 15) System.out.println(json);
+            return cyphers.stream().map(this::cleanEachQueryString).toList();
+        } catch(Exception e){
+            cyphers = extractCypherStrings(json);
+            System.out.println("Failed to normalize cypher list coming from llm output : " + json);
+            return cyphers;
         }
+    }
+    private String cleanEachQueryString(String cypher) {
+        if (cypher == null) return null;
+        return cypher
+                .replace("\\n", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+    }
+    private List<String> extractCypherStrings(String text) {
+        List<String> result = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean inString = false;
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c == '\\' && i + 1 < text.length() && text.charAt(i + 1) == '"') {
+                if (inString) current.append('"');
+                i++;
+                continue;
+            }
+            if (c == '"') {
+                if (inString) {
+                    result.add(current.toString().trim());
+                    current.setLength(0);
+                    inString = false;
+                } else {
+                    inString = true;
+                }
+                continue;
+            }
+            if (inString) {
+                current.append(c);
+            }
+        }
+        result.removeIf(s -> !s.startsWith("MATCH"));
+        return result;
     }
     private String preprocess(String raw) {
         String s = raw;
@@ -48,6 +87,7 @@ public class AISNormalizer {
         s = s.replaceAll("(?m)^```\\s*json\\s*$", "");
         s = s.replaceAll("(?m)^```\\s*$", "");
         s = s.replaceAll("(?m)^```\\s*$", "");
+        s = s.replaceAll(",\\n\\s*", ",");
         return s.trim();
     }
     private String repairJson(String json) {

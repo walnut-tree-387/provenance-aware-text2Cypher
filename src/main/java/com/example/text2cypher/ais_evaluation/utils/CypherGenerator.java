@@ -34,14 +34,37 @@ public class CypherGenerator {
     public Map<String, List<String>> generateCypherBatch(List<GoldEntry> goldEntries) {
         List<String> questions = goldEntries.stream().map(GoldEntry::getQuestion).toList();
         String prompt = promptBuilder.buildPrompt(questions);
-        List<String> ollamaModels = List.of("gpt-oss:120b-cloud",  "kimi-k2:1t-cloud");
+        return callApiForNormalBatchEvaluation(prompt);
+    }
+    public Map<String, List<String>> callApiForNormalBatchEvaluation(String prompt) {
+        List<String> ollamaModels = List.of("gpt-oss:120b-cloud", "kimi-k2:1t-cloud");
+        List<String> groqModels = List.of("llama-3.3-70b-versatile");
         List<String> hfModels = List.of("meta-llama/Llama-3.3-70B-Instruct:groq", "Qwen/Qwen3-32B:groq");
         Map<String, List<String>> modelMap = new HashMap<>();
         long cycle = 0;
+//        for(String model: groqModels){
+//            GroqChatResponse response = groqClient.chatCompletion(0.0f, prompt, model);
+//            if(response == null) {
+//                System.out.println("Null response came for model " + model);
+//                modelMap.put(model, new ArrayList<>());
+//                continue;
+//            }
+//            String rawText = response.getChoices()
+//                    .getFirst()
+//                    .getMessage()
+//                    .getContent();
+//            List<String> cyphers = answerNormalizer.normalizeCypher(rawText);
+//            System.out.println("Successful JSON fetched by model : " + model + "\n" + cyphers.size());
+//            modelMap.put(model, cyphers);
+//        }
         for(String model: ollamaModels){
-            OllamaChatResponse response = localClient.chatCompletion(0.0f , prompt, model);
             cycle++;
-            if(response == null) throw new RuntimeException("Response came null for " + model + " while generating Cypher");
+            OllamaChatResponse response = localClient.chatCompletion(0.0f , prompt, model);
+            if(response == null) {
+                System.out.println("Null response came for model " + model);
+                modelMap.put(model, new ArrayList<>());
+                continue;
+            }
             String rawText = response
                     .getMessage()
                     .getContent();
@@ -52,9 +75,13 @@ public class CypherGenerator {
         }
         cycle = 0;
         for(String model: hfModels){
-            GroqChatResponse response = hfClient.chatCompletion(0.0f, prompt, model);
             cycle++;
-            if(response == null) throw new RuntimeException("Response came null for " + model + " while generating Cypher");
+            GroqChatResponse response = hfClient.chatCompletion(0.0f, prompt, model);
+            if(response == null) {
+                System.out.println("Null response came for model " + model);
+                modelMap.put(model, new ArrayList<>());
+                continue;
+            }
             String rawText = response.getChoices()
                     .getFirst()
                     .getMessage()
@@ -69,42 +96,13 @@ public class CypherGenerator {
     public Map<String, List<String>> generateCypherFewShotBatch(List<GoldEntry> goldEntries) {
         List<String> questions = goldEntries.stream().map(GoldEntry::getQuestion).toList();
         String prompt = promptBuilder.buildFewShotPrompt(questions);
-        List<String> ollamaModels = List.of("gpt-oss:120b-cloud",  "kimi-k2:1t-cloud");
-        Map<String, List<String>> modelMap = new HashMap<>();
-        long cycle = 0;
-        for(String model: ollamaModels){
-            OllamaChatResponse response = localClient.chatCompletion(0.0f , prompt, model);
-            cycle++;
-            if(response == null) throw new RuntimeException("Response came null for " + model + " while generating AIS");
-            String rawText = response
-                    .getMessage()
-                    .getContent();
-            List<String> cyphers = answerNormalizer.normalizeCypher(rawText);
-            modelMap.put(model, cyphers);
-            if(cycle <= 1) SleeperCoach.sleepMinutes(20000);
-        }
-        String groqQwen = "qwen/qwen3-32b";
-        String hfLlama = "meta-llama/Llama-3.3-70B-Instruct:groq";
-        GroqChatResponse response = hfClient.chatCompletion(0.0f, prompt, hfLlama);
-        if(response == null) throw new RuntimeException("Response came null for " + hfLlama + " while generating AIS");
-        String rawText = response.getChoices()
-                .getFirst()
-                .getMessage()
-                .getContent();
-        List<String> cyphers = answerNormalizer.normalizeCypher(rawText);
-        modelMap.put(hfLlama, cyphers);
-        response = groqClient.chatCompletion(0.0f, prompt, groqQwen);
-        if(response == null) throw new RuntimeException("Response came null for " + groqQwen + " while generating AIS");
-        rawText = response.getChoices()
-                .getFirst()
-                .getMessage()
-                .getContent();
-        cyphers = answerNormalizer.normalizeCypher(rawText);
-        modelMap.put(groqQwen, cyphers);
-        return modelMap;
+        return callApiForNormalBatchEvaluation(prompt);
     }
     public List<String> generateDirectCypherBatchForNullPredictedEntry(List<String> questions, String modelName) {
         String prompt = promptBuilder.buildPrompt(questions);
+        return callApiForNullPredictedEntry(prompt, modelName);
+    }
+    public List<String> callApiForNullPredictedEntry(String prompt, String modelName) {
         List<String> output = new ArrayList<>();
         if(modelName.equals("openai/gpt-oss-120b") || modelName.equals("moonshotai/kimi-k2-instruct-0905")){
             String tempModel = "";
@@ -130,5 +128,9 @@ public class CypherGenerator {
             output = answerNormalizer.normalizeCypher(rawText);
         }
         return output;
+    }
+    public List<String> generateFewShotCypherBatchForNullPredictedEntry(List<String> questions, String modelName) {
+        String prompt = promptBuilder.buildFewShotPrompt(questions);
+        return callApiForNullPredictedEntry(prompt, modelName);
     }
 }
