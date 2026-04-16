@@ -2,6 +2,7 @@ package com.example.text2cypher.evaluation_split.zero_shot_direct_cypher;
 
 import com.example.text2cypher.ais_evaluation.record.CypherRecord;
 import com.example.text2cypher.cypher_benchmark.dto.QueryType;
+import com.example.text2cypher.evaluation_split.few_shot_direct_cypher.FewShotDirectCypher;
 import com.example.text2cypher.evaluation_split.zero_shot_ais2cypher.ZeroShotAis2Cypher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,4 +18,7 @@ public interface ZeroShotDirectCypherRepository extends JpaRepository<ZeroShotDi
     List<ZeroShotDirectCypher> findAllByQueryTypeAndEvaluationStage(QueryType queryType, Long evaluationStage);
     @Query("    SELECT zsdc from ZeroShotDirectCypher zsdc WHERE zsdc.predictedCypher IS NULL AND zsdc.modelName = :modelName ")
     List<ZeroShotDirectCypher> findAllByNullPredictedCypher(@Param("modelName") String modelName, Pageable pageable);
+    @Query("    SELECT zsdc from ZeroShotDirectCypher zsdc WHERE zsdc.executed = FALSE ORDER BY zsdc.id DESC")
+    List<ZeroShotDirectCypher> findAllByExecuted();
+    List<ZeroShotDirectCypher> findAllByModelNameOrderById(String modelName);
 }
